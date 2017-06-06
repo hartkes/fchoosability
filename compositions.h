@@ -16,38 +16,23 @@ public:
     std::vector<int> x;  // the vector
     int first_nonzero;  // the position of the first nonzero entry of x
     
-    Compositions(int n,int k);
-    ~Compositions();
-    
     // These methods generate compositions in colex order.
     // The algorithms are taken from Jorg Arndt's fxtbook.
-    void first();
+    void first(int n,int k);
     int next();
 };
 
 inline
-Compositions::Compositions(int n,int k)
+void Compositions::first(int n,int k)
 {
     this->n=n;
     this->k=k;
+    
     x.resize(k,0);  // resize the vector to length k, filling with 0s
-}
-
-inline
-Compositions::~Compositions()
-{
-    // Since x is of type std::vector, deallocation will happen automatically.
-}
-
-inline
-void Compositions::first()
-{
-    int i;
     
     x[0]=n;  // all of the nonzero values are in the first position
     first_nonzero=0;
-    for (i=k-1; i>0; i--)  // setting the remaining elements to 0 might not be necessary with std::vector::resize()
-        x[i]=0;
+    // we don't need to set the remaining elements to 0, since std::vector::resize() initializes with 0s
 }
 
 inline
