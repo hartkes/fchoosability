@@ -7,6 +7,7 @@
 // Copyright 2017, Stephen G. Hartke
 // Licensed under the GPL version 3.
 
+#include <vector>
 #include "graph.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,15 +56,14 @@ class fGraph : public UndirectedGraph
     // The adjacency matrix can hold 0,1 values, or arbitrary integers.
 {
 public:
-    int *f;  // the f-vector, indexed by number of vertices
+    std::vector<int> f;  // the f-vector, indexed by the vertices
     fGraph();
-    fGraph(fGraph *G);  // create a copy of the fgraph G
+    fGraph(const fGraph &G);  // create a copy of the fgraph G
     fGraph(char *fgraph6);  // create a graph from the given fgraph6 string
-    ~fGraph();
+    //~fGraph();  // no destructor needed, since f is automatically deallocated
     
     void allocate(int n);
-    void deallocate();
-    void copy_from(fGraph *H);
+    void copy_from(const fGraph& H);
     
     void read_fgraph6_string(char *fgraph6);
     int remove_vertices_with_f_1();
@@ -73,26 +73,26 @@ public:
 fGraph::fGraph() 
        :UndirectedGraph()  // call the base constructor
 {
-    f=NULL;
+    f.resize(0);
 }
 
 
-fGraph::fGraph(fGraph *G) 
+fGraph::fGraph(const fGraph& G) 
        :UndirectedGraph()  // call the base constructor
 {
     int i;
     
     //printf("Constructor fGraph, about to call allocate\n");
-    allocate(G->n);  // allocate the data structures
+    allocate(G.n);  // allocate the data structures
     //printf("allocate has been called\n");
     
     // We need to copy the adjacencies from G to the new graph.
     for (i=nchoose2-1; i>=0; i--)  // counting down is faster because the condition is testing against 0
-        adj[i]=G->adj[i];
+        adj[i]=G.adj[i];
     
     // We need to copy the f vector from G to the new graph.
     for (i=n-1; i>=0; i--)
-        f[i]=G->f[i];
+        f[i]=G.f[i];
     
     //printf("Done with constructor\n");
 }
@@ -101,56 +101,34 @@ fGraph::fGraph(fGraph *G)
 fGraph::fGraph(char *fgraph6)  // create a graph from the given fgraph6 string
        :UndirectedGraph()  // call the base constructor
 {
-    f=NULL;
     read_fgraph6_string(fgraph6);
-}
-
-
-fGraph::~fGraph()
-{
-    // Note that the base class destructor is called automatically at the end of the destructor of the derived class (reverse order of inheritance).
-    // ~UndirectedGraph() calls UndirectedGraph::deallocate.
-    // FIXME:  This now seems a problem, since then f is not deallocated.
-    //printf("~fGraph() deconstructor.\n");
 }
 
 
 void fGraph::allocate(int n)
 {
-    //printf("fGraph::allocate, passed-in n=%d, this->n=%d, dss=%d\n",n,this->n,data_structure_size);
+    //printf("fGraph::allocate, passed-in n=%d, this->n=%d\n",n,this->n);
     
-    if (n>data_structure_size)  // n exceeds current data structures, so we need to re-allocate the data structures
-    {
-        deallocate();  // this just handles additional fGraph structures
-        f=new int[n];
-    }
-    
-    UndirectedGraph::allocate(n);  // this handles the UndirectedGraph structures, as well as changes n and data_structure_size
+    f.resize(n);
+    UndirectedGraph::allocate(n);  // this handles the UndirectedGraph structures, as well as changes n and nchoose2
     
     //printf("done fGraph::allocate, n=%d, this->n=%d, dss=%d\n",n,this->n,data_structure_size);
 }
 
 
-void fGraph::deallocate()
-{
-    if (data_structure_size>=0)  // the graph has allocated data
-        delete[] f;  // we only need to deallocate the additional data structures for fGraph
-}
-
-
-void fGraph::copy_from(fGraph *H)
+void fGraph::copy_from(const fGraph& H)
 {
     int i;
     
-    allocate(H->n);
+    allocate(H.n);
     
     // copy the adj matrix
     for (i=nchoose2-1; i>=0; i--)
-        adj[i]=H->adj[i];
+        adj[i]=H.adj[i];
     
     // copy the f vector
     for (i=n-1; i>=0; i--)
-        f[i]=H->f[i];
+        f[i]=H.f[i];
 }
 
 
@@ -165,6 +143,7 @@ void fGraph::read_fgraph6_string(char *fgraph6)
     cur=fgraph6;
     gn=decode_6bits(*cur);
     
+    //printf("reading fgraph6 string, new n=%d\n",gn);
     allocate(gn);  // this also sets this->n to gn
     
     cur+=2;  // advance past the underscore

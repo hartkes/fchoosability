@@ -7,6 +7,9 @@
 // Licensed under the GPL version 3.
 
 
+#include <vector>
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Helper functions for dealing with colex order.
 /////////////////////////////////////////////////////////////////////////////
@@ -72,46 +75,41 @@ class UndirectedGraph
 {
 public:
     int n;  // the number of vertices; -1 if unallocated
-    int data_structure_size;  // the size of the data structures if they held exactly this many vertices; -1 if unallocated
     int nchoose2;  // binomial(n,2)
-    int *adj;  // the adjacency matrix
+    std::vector<int> adj;  // the adjacency matrix
             // The adacency matrix is stored as a one-dimensional array of integers of length binomial(data_structure_size,2), sorted in colex order.
 
     UndirectedGraph();  // create an unallocated graph, n=-1
     UndirectedGraph(int n);  // create an empty graph with n vertices
     UndirectedGraph(char *g6);  // create a graph from the given graph6 string
     UndirectedGraph(UndirectedGraph *G, int k);  // create an induced subgraph of G on the vertices 0..k-1
-    ~UndirectedGraph();
+    // ~UndirectedGraph();  // we have no destructor since adj is automatically deallocated when the object goes out of scope
     
     void allocate(int n);
-    void deallocate();
 
     void zero_adj();
     void read_graph6_string(char *g6);
-    void write_graph6_string(char *g6, int length);
-    void print_adj_matrix();
+    void write_graph6_string(char *g6, int length) const;
+    void print_adj_matrix() const;
     
     void set_adj(int i, int j, int val);
     void set_adj_sorted(int i, int j, int val);
-    int get_adj(int i, int j);
-    int get_adj_sorted(int i, int j);
+    int get_adj(int i, int j) const;
+    int get_adj_sorted(int i, int j) const;
     
-    int get_number_of_edges();
+    int get_number_of_edges() const;
 };
 
 
 UndirectedGraph::UndirectedGraph()  // create an unallocated graph, n=-1
 {
     n=-1;
-    data_structure_size=-1;
 }
 
 
 UndirectedGraph::UndirectedGraph(int n)  // create an empty graph with n vertices
 {
-    this->data_structure_size=-1;
-    allocate(n);
-    zero_adj();
+    allocate(n);  // this also zeroes the adjacency matrix
 }
 
 
@@ -123,7 +121,6 @@ UndirectedGraph::UndirectedGraph(char *g6)  // create a graph from the given gra
 
 UndirectedGraph::UndirectedGraph(UndirectedGraph *G, int k)  // create an induced subgraph of G on the vertices 0..k-1
 {
-    this->data_structure_size=-1;
     allocate(k);
     
     // We need to copy the adjacencies from G to the new graph.
@@ -133,43 +130,11 @@ UndirectedGraph::UndirectedGraph(UndirectedGraph *G, int k)  // create an induce
 }
 
 
-UndirectedGraph::~UndirectedGraph()
-{
-    //printf("~UndirectedGraph() deconstructor\n");
-    deallocate();  // this is UndirectedGraph::deallocate.
-                   // deallocate for derived classes need to be called by the destructors for the derived classes.
-}
-
-
 void UndirectedGraph::allocate(int n)
 {
-    if (n>data_structure_size)
-    {
-        if (data_structure_size>=0)  // deallocate previous data structures
-            deallocate();  // also changes n and data_structure_size
-        this->n=n;
-        data_structure_size=n;
-        nchoose2=binomial2(n);
-        adj=new int[nchoose2];
-    }
-    else
-    {
-        // Even if we don't expand our data structures, update to the new value of n.
-        this->n=n;
-        nchoose2=binomial2(n);
-    }
-}
-
-
-void UndirectedGraph::deallocate()
-{
-    if (data_structure_size>=0)  // the graph has allocated data structures
-    {
-        delete[] adj;
-        
-        data_structure_size=-1;  // data structures have been deallocated
-        n=-1;
-    }
+    this->n=n;
+    nchoose2=binomial2(n);
+    adj.resize(nchoose2);  // resize the adjacency matrix if necessary
 }
 
 
@@ -241,7 +206,7 @@ void UndirectedGraph::read_graph6_string(char *g6)
 }
 
 
-void UndirectedGraph::write_graph6_string(char *g6, int length)
+void UndirectedGraph::write_graph6_string(char *g6, int length) const
     // Writes graph6 format into the string at g6.
     // The buffer string g6 has the length indicated.
     // The string is then zero terminated.
@@ -322,7 +287,7 @@ void UndirectedGraph::write_graph6_string(char *g6, int length)
 }
 
 
-void UndirectedGraph::print_adj_matrix()
+void UndirectedGraph::print_adj_matrix() const
 {
     int i,j;
 
@@ -380,7 +345,7 @@ void UndirectedGraph::set_adj_sorted(int i, int j, int val)
 
 
 inline
-int UndirectedGraph::get_adj(int i, int j)
+int UndirectedGraph::get_adj(int i, int j) const
 {
     if (i==j)  // we do not have loops
         return 0;
@@ -390,14 +355,14 @@ int UndirectedGraph::get_adj(int i, int j)
 
 
 inline
-int UndirectedGraph::get_adj_sorted(int i, int j)
+int UndirectedGraph::get_adj_sorted(int i, int j) const
 {
     return adj[pair_sorted_to_index(i,j)];
 }
 
 
 inline
-int UndirectedGraph::get_number_of_edges()
+int UndirectedGraph::get_number_of_edges() const
 {
     int e=0;
     int i;
