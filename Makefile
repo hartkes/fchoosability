@@ -9,6 +9,10 @@ RELEASEFLAGS=
 INCLUDES=-I./libexact-1.0
 LIBRARIES=-L./libexact-1.0 -lexact
 
+
+# debug option inspired by:
+# https://stackoverflow.com/questions/1534912/how-to-build-in-release-mode-with-optimizations-in-gcc/1536681#1536681
+
 ifeq ($(BUILD),debug)
 # "Debug" build - no optimization, and debugging symbols
 CPPFLAGS += $(DEBUGFLAGS)
