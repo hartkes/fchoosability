@@ -4,7 +4,10 @@ CXX=g++
 #CXX=clang++
 
 CPPFLAGS= -std=c++11 -O5
-DEBUGFLAGS= -Wall -g -D_GLIBCXX_DEBUG
+
+# -D_GLIBCXX_DEBUG (among other things) turns on array bounds checking for [] on std::vector
+DEBUGFLAGS= -Wall -g -D_GLIBCXX_DEBUG -fsanitize=address
+
 RELEASEFLAGS= 
 INCLUDES=-I./libexact-1.0
 LIBRARIES=-L./libexact-1.0 -lexact
