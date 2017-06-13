@@ -7,6 +7,12 @@
 // Copyright 2017, Stephen G. Hartke
 // Licensed under the GPL version 3.
 
+
+#pragma once  // for compilers that support this
+#ifndef FGRAPH_H__IECHAIFEUS  // include guard
+#define FGRAPH_H__IECHAIFEUS
+
+
 #include <vector>
 #include "graph.h"
 
@@ -299,3 +305,5 @@ int fGraph::remove_vertices_with_f_1()
     return 1;  // this graph is now ready to be checked with the Nullstellensatz
 }
 
+
+#endif  // FGRAPH_H__IECHAIFEUS

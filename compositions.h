@@ -7,6 +7,11 @@
 // Licensed under the GPL version 3.
 
 
+#pragma once  // for compilers that support this
+#ifndef COMPOSITIONS_H__YEDAISEXOH  // include guard
+#define COMPOSITIONS_H__YEDAISEXOH
+
+
 #include <vector>
 
 class Compositions
@@ -58,3 +63,6 @@ int Compositions::next()
     }
     return 1;
 }
+
+
+#endif  // COMPOSITIONS_H__YEDAISEXOH

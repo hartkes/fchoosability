@@ -7,6 +7,11 @@
 // Licensed under the GPL version 3.
 
 
+#pragma once  // for compilers that support this
+#ifndef GRAPH_H__DAVEEHULAH  // include guard
+#define GRAPH_H__DAVEEHULAH
+
+
 #include <vector>
 
 
@@ -325,7 +330,7 @@ void UndirectedGraph::print_adj_matrix() const
 
 /////////////////////////////////////////////////////////////////////////////
 // Routines for getting and setting adjacencies.
-// Note there are two versions of each routine based on whether it's
+// Note there are two versions of each routine based on whether it is
 // guaranteed that the pair i,j is sorted (i<j).
 /////////////////////////////////////////////////////////////////////////////
 
@@ -371,3 +376,6 @@ int UndirectedGraph::get_number_of_edges() const
         e+=adj[i];  // we just sum the entries of (the upper part of) the adjacency matrix
     return e;
 }
+
+
+#endif  // GRAPH_H__DAVEEHULAH
