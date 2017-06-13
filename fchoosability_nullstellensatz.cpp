@@ -115,9 +115,7 @@ int is_fchoosable(const fGraph& G)
     // Other returned values means that such a proof fails.
 {
     int sum_f_minus_1,diff;
-    int new_f_i;
-    int coeff;
-    int i,j;
+    int i;
     int condition_of_H;  // return value of H->remove_vertices_with_f_1()
     fGraph H;
     Compositions C;
@@ -193,7 +191,7 @@ int is_fchoosable(const fGraph& G)
         H.print_adj_matrix();
         //*/
         
-        if (condition_of_H=H.remove_vertices_with_f_1())
+        if ((condition_of_H=H.remove_vertices_with_f_1()))
             // f[i]>=2 for all i, so we can call leading_coefficient
         {
             //printf("vertices of f==1 successfully removed! condition_of_H=%d\n",condition_of_H);

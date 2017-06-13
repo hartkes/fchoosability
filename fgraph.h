@@ -48,7 +48,7 @@ char encode_6bits(int x)
 inline
 int decode_6bits(char x)
 {
-    return inverse_mapping[x];
+    return inverse_mapping[(size_t)x];  // cast char x to be appropriate for indexing
 }
 
 
@@ -186,7 +186,7 @@ int fGraph::remove_vertices_with_f_1()
     // decreasing the f of their neighbors by 1.
     // If an f[i] that is 0 or negative is encountered, the function returns False.
 {
-    int i,j,new_i,new_j;
+    int i,j,new_i;
     int new_n;
     
     // First we check if any of the initial f[i] values are <=0.
