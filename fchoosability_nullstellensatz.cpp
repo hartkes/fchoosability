@@ -122,10 +122,9 @@ int is_fchoosable(const fGraph& G)
     
     
     for (i=G.n-1; i>=0; i--)
-        if (G.f[i]<=1)
-            // TODO: we should be able to fix this by deleting the vertices of with f[i]==1; ones that have f[i]<=0 means no coloring is possible.
+        if (G.f[i]<=0)
         {
-            printf("f[%d]=%d<=1, which is not allowed by libexact.\n",i,G.f[i]);
+            printf("f[%d]=%d<=0, which means the graph is not f-choosable.\n",i,G.f[i]);
             return 0;
         }
     
@@ -134,7 +133,7 @@ int is_fchoosable(const fGraph& G)
         sum_f_minus_1+=(G.f[i]-1);
     diff=sum_f_minus_1-G.get_number_of_edges();
     
-    printf("diff=%d\n",diff);
+    //printf("diff=%d\n",diff);
     
     if (diff<0)
     {
@@ -143,7 +142,12 @@ int is_fchoosable(const fGraph& G)
     }
     else if (diff==0)
     {
-        if (leading_coefficient(G)!=0)
+        H.copy_from(G);
+        condition_of_H=H.remove_vertices_with_f_1();
+        if (   (condition_of_H==2) || 
+             ( (condition_of_H==1) && (leading_coefficient(H)!=0) )
+           )
+                    // f[i]>=2 for all i, so we can call leading_coefficient
         {
             printf("Success! <===============================================================================\n");
             printf("  f(G)=");
@@ -156,15 +160,9 @@ int is_fchoosable(const fGraph& G)
         else
             return 2;  // the Combin Nullst is inconclusive
     }
-    
+    // else if (diff>0)
     
     C.first(diff,G.n);  // initialize the compositions; we know that diff>0
-    
-    //printf("Allocating H\n");
-    //printf("n=%d dss=%d\n",G.n,G.data_structure_size);
-    
-    //printf("Done allocating H\n");
-    
     do  // iterate over all compositions
     {
         /*
