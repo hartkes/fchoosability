@@ -4,10 +4,12 @@
 // Copyright 2017 by Stephen Hartke.
 // Licensed under the GPL version 3.
 
+#include <iostream>
+#include <string>
+#include <string.h>  // C library, for strlen; remove when using C++ std::string
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>  // C library, for strlen; remove when using C++ std::string
-#include <time.h>  // for reporting runtime
+#include <ctime>  // for reporting runtime
 #include "fgraph.h"
 #include "compositions.h"
 
@@ -185,23 +187,20 @@ int is_fchoosable(const fGraph& G)
 
 
 
-int main(int argc, char *argv[])
+int main()
 {
-    const int max_line_length=1000;
-    char line_in[max_line_length];
-    int val;
-    
+    std::string line_in;
     fGraph G;
-    
+    int val=0;
     clock_t start,end;  // for reporting CPU runtime
     
     // We read lines in from stdin.
     // Each line should be in fgraph6 format.
     // If a line starts with '>', then it is treated as a comment.
     
-    while (fgets(line_in,max_line_length,stdin)!=0)
+    while (std::getline(std::cin,line_in))
     {
-        if (strlen(line_in)<=3)  // this line is too short, probably end of file
+        if (line_in.length()<=3)  // this line is too short, probably end of file
             continue;
         
         if (line_in[0]=='>')  // treat this line as a comment
@@ -211,14 +210,15 @@ int main(int argc, char *argv[])
         
         G.read_fgraph6_string(line_in);
         
-        printf("Input read: n=%d %s",G.n,line_in);
+        printf("Input read: n=%d %s\n",G.n,line_in.c_str());
         
         val=is_fchoosable(G);
         if (val==2)
             printf("  The Nullstellensatz was inconclusive.\n");
         
         end=clock();
-        printf("    CPU time used: %.3f seconds\n",((double)(end-start))/CLOCKS_PER_SEC);
+        printf("    CPU time used: %.3f seconds\n\n",((double)(end-start))/CLOCKS_PER_SEC);
     }
     
+    return (val==1);  // return true if the graph can be proven f-choosable
 }

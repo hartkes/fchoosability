@@ -14,6 +14,7 @@
 
 
 #include <vector>
+#include <string>
 #include "graph.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -65,13 +66,13 @@ public:
     std::vector<int> f;  // the f-vector, indexed by the vertices
     fGraph();
     fGraph(const fGraph &G);  // create a copy of the fgraph G
-    fGraph(char *fgraph6);  // create a graph from the given fgraph6 string
+    fGraph(const std::string &fgraph6);  // create a graph from the given fgraph6 string
     //~fGraph();  // no destructor needed, since f is automatically deallocated
     
     void allocate(int n);
     void copy_from(const fGraph& H);
     
-    void read_fgraph6_string(char *fgraph6);
+    void read_fgraph6_string(const std::string &fgraph6);
     int remove_vertices_with_f_1();
 };
 
@@ -100,7 +101,7 @@ fGraph::fGraph(const fGraph& G)
 }
 
 
-fGraph::fGraph(char *fgraph6)  // create a graph from the given fgraph6 string
+fGraph::fGraph(const std::string &fgraph6)  // create a graph from the given fgraph6 string
        :UndirectedGraph()  // call the base constructor
 {
     read_fgraph6_string(fgraph6);
@@ -130,32 +131,32 @@ void fGraph::copy_from(const fGraph& H)
 }
 
 
-void fGraph::read_fgraph6_string(char *fgraph6)
+void fGraph::read_fgraph6_string(const std::string &fgraph6)
     // Reads in fgraph6 format
 {
-    char *cur;  // the current character in the string that we're considering
+    int cur;  // the index of the current character in the string that we're considering
     int gn;  // the number of vertices in the graph in fgraph6
     int val,mask;
     int i,j;
     
-    cur=fgraph6;
-    gn=decode_6bits(*cur);
+    cur=0;
+    gn=decode_6bits(fgraph6[cur]);
     
-    allocate(gn);  // this also sets this->n to gn
+    allocate(gn);  // this also sets this->n to gn, as well as allocates f
     
     cur+=2;  // advance past the underscore
     
     // read in the f-vector
     for (i=0; i<n; i++)
     {
-        f[i]=decode_6bits(*cur);
+        f[i]=decode_6bits(fgraph6[cur]);
         cur++;
     }
     
     cur++;  // advance past the underscore
     
     // read in the adjacency matrix
-    val=decode_6bits(*cur);
+    val=decode_6bits(fgraph6[cur]);
     mask=1<<5;  // start with the high bit
     for (j=0; j<n; j++)  // adj matrix is bit packed in colex order in fgraph6 format
         for (i=0; i<j; i++)
@@ -165,7 +166,7 @@ void fGraph::read_fgraph6_string(char *fgraph6)
             if (!mask)  // mask has become 0
             {
                 cur++;
-                val=decode_6bits(*cur);
+                val=decode_6bits(fgraph6[cur]);
                 mask=1<<5;
             }
         }
