@@ -6,9 +6,7 @@
 
 #include <iostream>
 #include <string>
-#include <string.h>  // C library, for strlen; remove when using C++ std::string
-#include <stdlib.h>
-#include <stdio.h>
+#include <stdio.h>  // for printf
 #include <ctime>  // for reporting runtime
 #include "fgraph.h"
 #include "compositions.h"
