@@ -88,9 +88,7 @@ fGraph::fGraph(const fGraph& G)
 {
     int i;
     
-    //printf("Constructor fGraph, about to call allocate\n");
     allocate(G.n);  // allocate the data structures
-    //printf("allocate has been called\n");
     
     // We need to copy the adjacencies from G to the new graph.
     for (i=nchoose2-1; i>=0; i--)  // counting down is faster because the condition is testing against 0
@@ -99,8 +97,6 @@ fGraph::fGraph(const fGraph& G)
     // We need to copy the f vector from G to the new graph.
     for (i=n-1; i>=0; i--)
         f[i]=G.f[i];
-    
-    //printf("Done with constructor\n");
 }
 
 
@@ -113,12 +109,8 @@ fGraph::fGraph(char *fgraph6)  // create a graph from the given fgraph6 string
 
 void fGraph::allocate(int n)
 {
-    //printf("fGraph::allocate, passed-in n=%d, this->n=%d\n",n,this->n);
-    
     f.resize(n);
     UndirectedGraph::allocate(n);  // this handles the UndirectedGraph structures, as well as changes n and nchoose2
-    
-    //printf("done fGraph::allocate, n=%d, this->n=%d, dss=%d\n",n,this->n,data_structure_size);
 }
 
 
@@ -149,7 +141,6 @@ void fGraph::read_fgraph6_string(char *fgraph6)
     cur=fgraph6;
     gn=decode_6bits(*cur);
     
-    //printf("reading fgraph6 string, new n=%d\n",gn);
     allocate(gn);  // this also sets this->n to gn
     
     cur+=2;  // advance past the underscore
@@ -184,7 +175,9 @@ void fGraph::read_fgraph6_string(char *fgraph6)
 int fGraph::remove_vertices_with_f_1()
     // We iteratively remove all of the vertices with f[i]=1,
     // decreasing the f of their neighbors by 1.
-    // If an f[i] that is 0 or negative is encountered, the function returns False.
+    // If an f[i] that is 0 or negative is encountered, the function returns 0.
+    // The function returns 1 if ready for the graph to be checked with the nullstellensatz,
+    // or 2 if the graph has all (but at most 1) vertices have been eliminated.
 {
     int i,j,new_i;
     int new_n;
@@ -240,8 +233,6 @@ int fGraph::remove_vertices_with_f_1()
             
             f[i]=0;  // marks a vertex that has been eliminated (now isolated)
             new_n--;
-            // FIXME:  It should never be the case that new_n can go down to -1.
-            // PROBLEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
             
             i=new_i;  // what to check next; if a larger index went down to 1, check that
         }
@@ -261,7 +252,6 @@ int fGraph::remove_vertices_with_f_1()
     
     if (new_n<=1)  // all but at most one of the vertices successfully removed in a greedy fashion
     {
-        printf("new_n=%d\n",new_n);
         if (new_n<0)
             exit(8);
         return 2;
@@ -276,7 +266,6 @@ int fGraph::remove_vertices_with_f_1()
             if (j<n-1)  // j and n-1 are different vertices
             {
                 // we swap vertices j and n-1
-                //printf("Swapping vertices j=%d and n-1=%d\n",j,n-1);
                 for (i=n-2; i>=0; i--)
                     if (i!=j)
                         set_adj(j,i,get_adj(n-1,i));

@@ -28,10 +28,8 @@ int leading_coefficient(const fGraph& G)
     
     int n,num_edges;
     int coeff,sign;
-    int count;
+    //int count;
     int i,j,k;
-    
-    //printf("Starting to compute the leading coefficient of the graph polynomial. n=%d\n",G.n);
     
     n=G.n;
     num_edges=G.get_number_of_edges();
@@ -43,7 +41,6 @@ int leading_coefficient(const fGraph& G)
     }
     
     // Initialize the exact cover library.
-    //printf("initializing libexact  n=%d, num_edges=%d\n",n,num_edges);
     e=exact_alloc();
     
     // In the exact cover problem, we have 2 columns for each edge (whether x_i or -x_j is chosen from the factor corresponding to the edge v_i v_j).
@@ -75,33 +72,20 @@ int leading_coefficient(const fGraph& G)
                 k++;
             }
     
-    //printf("libexact problem declared\n");
-    
-    count=0;
+    //count=0;
     coeff=0;
     while ((soln=exact_solve(e,&soln_size)) !=NULL)
     {
         sign=0;  // (-1)^sign is the contribution we will add to coeff
         for (i=soln_size-1; i>=0; i--)
-        {
             sign^=(soln[i]&1);  // the odd-indexed cols have negative sign; we want the parity of those
                 // sign is thus 0 or 1 at all times
-            //printf("%d (%d) ",soln[i],sign);
-        }
-        //printf("\n");
-        //printf("+");
         coeff+=(1-2*sign);
-        count+=1;
+        //count+=1;
     }
     //printf("count=%d\n",count);
     if (coeff!=0)
-        //printf("  coeff=%2d  <=======================================================================\n",coeff);
         printf("  coeff=%2d  <---------\n",coeff);
-    else
-    {
-        //printf("coeff=%d\n",coeff);
-        ;
-    }
     
     exact_free(e);
     
@@ -151,9 +135,9 @@ int is_fchoosable(const fGraph& G)
         {
             printf("Success! <===============================================================================\n");
             printf("  f(G)=");
-            for (i=0; i<G.n; i++)
-                printf("%d ",G.f[i]);
-            printf("\n");
+            for (i=0; i<G.n-1; i++)
+                printf("%d,",G.f[i]);
+            printf("%d\n",G.f[G.n-1]);
             
             return 1;  // G is proved to be f-choosable by the Combin Nullst.
         }
@@ -173,36 +157,25 @@ int is_fchoosable(const fGraph& G)
         //*/
         
         // reset the adjacencies in H, in case they were changed when removing vertices with f[i]==1
-        //printf("resetting H, G.n=%d, H->n=%d H->dss=%d, G.nchoose2=%d\n",G.n,H->n,H->data_structure_size,G.nchoose2);
         H.copy_from(G);
-        //printf("Done resetting H\n");
         
         // set H's f vector to be G's f vector minus the composition
         for (i=G.n-1; i>=0; i--)
             H.f[i]= G.f[i] - C.x[i];
         
-        /*
-        printf("  f(H)=");
-        for (i=0; i<H.n; i++)
-            printf("%d ",H.f[i]);
-        printf("\n");
-        H.print_adj_matrix();
-        //*/
-        
-        if ((condition_of_H=H.remove_vertices_with_f_1()))
-            // f[i]>=2 for all i, so we can call leading_coefficient
+        condition_of_H=H.remove_vertices_with_f_1();
+        if (   (condition_of_H==2) || 
+             ( (condition_of_H==1) && (leading_coefficient(H)!=0) )
+           )
+                    // f[i]>=2 for all i, so we can call leading_coefficient
         {
-            //printf("vertices of f==1 successfully removed! condition_of_H=%d\n",condition_of_H);
-            if ((condition_of_H==2) || (leading_coefficient(H)!=0))
-            {
-                printf("Success! <===============================================================================\n");
-                printf("  f(H)=");
-                for (i=0; i<G.n; i++)
-                    printf("%d ",G.f[i]-C.x[i]);  // H.f[i] might have been modified when removing vertices with f[i]==1
-                printf("\n");
-                
-                return 1;  // G is proved to be f-choosable by the Combin Nullst.
-            }
+            printf("Success! <===============================================================================\n");
+            printf("  f(H)=");
+            for (i=0; i<G.n; i++)
+                printf("%d,",G.f[i]-C.x[i]);  // H.f[i] might have been modified when removing vertices with f[i]==1
+            printf("%d\n",G.f[G.n-1]-C.x[G.n-1]);
+            
+            return 1;  // G is proved to be f-choosable by the Combin Nullst.
         }
         
     } while (C.next());
@@ -226,35 +199,19 @@ int main(int argc, char *argv[])
     // Each line should be in fgraph6 format.
     // If a line starts with '>', then it is treated as a comment.
     
-    //printf("Starting.\n");
-    
     while (fgets(line_in,max_line_length,stdin)!=0)
     {
-        //printf("start of loop\n");
+        if (strlen(line_in)<=3)  // this line is too short, probably end of file
+            continue;
         
         if (line_in[0]=='>')  // treat this line as a comment
             continue;
         
-        //printf("len line_in=%d\n",strlen(line_in));
-        if (strlen(line_in)<=3)  // this line is too short, probably end of file
-            continue;
-        
-        //printf("about to start clock\n");
         start=clock();  // record starting time
         
-        //printf("reading in graph6 string\n");
         G.read_fgraph6_string(line_in);
         
         printf("Input read: n=%d %s",G.n,line_in);
-        
-        /*
-        printf("f= ");
-        for (int i=0; i<G.n; i++)
-            printf("%1d ",G.f[i]);
-        printf("\n");
-        G.print_adj_matrix();
-        printf("\n");
-        //*/
         
         val=is_fchoosable(G);
         if (val==2)
@@ -263,7 +220,5 @@ int main(int argc, char *argv[])
         end=clock();
         printf("    CPU time used: %.3f seconds\n",((double)(end-start))/CLOCKS_PER_SEC);
     }
-    
-    //printf("G about to go out of scope.\n");
     
 }
