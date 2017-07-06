@@ -1,5 +1,4 @@
 
-name=fchoosability_nullstellensatz
 CXX=g++
 #CXX=clang++
 
@@ -24,16 +23,27 @@ else
 CPPFLAGS += $(RELEASEFLAGS)
 endif
 
-all: $(name)
+all: fchoosability_nullstellensatz fchoosability_exhaustive
 
 debug:
 	make "BUILD=debug"
 
-$(name): $(name).cpp graph.h fgraph.h compositions.h
-	$(CXX) $(CPPFLAGS) $(INCLUDES) $(name).cpp $(LIBRARIES) -o $(name)
+fchoosability_exhaustive: fchoosability_exhaustive.cpp graph.h fgraph.h bitarray.h subgraph.h listassignment.h
+	$(CXX) $(CPPFLAGS) $(INCLUDES) fchoosability_exhaustive.cpp $(LIBRARIES) -o fchoosability_exhaustive
+
+fchoosability_nullstellensatz: fchoosability_nullstellensatz.cpp graph.h fgraph.h compositions.h
+	$(CXX) $(CPPFLAGS) $(INCLUDES) fchoosability_nullstellensatz.cpp $(LIBRARIES) -o fchoosability_nullstellensatz
 
 clean:
-	rm -f $(name)
+	rm -f fchoosability_exhaustive fchoosability_nullstellensatz
 
 test_compositions: test_compositions.cpp compositions.h
-	$(CXX) $(CPPFLAGS) test_compositions.cpp -o test_compositions
+	$(CXX) $(CPPFLAGS) $(DEBUGFLAGS) test_compositions.cpp -o test_compositions
+
+test_bitarray: test_bitarray.cpp bitarray.h
+	$(CXX) $(CPPFLAGS) $(DEBUGFLAGS) test_bitarray.cpp -o test_bitarray
+
+test_subgraph: test_subgraph.cpp bitarray.h subgraph.h
+	$(CXX) $(CPPFLAGS) $(DEBUGFLAGS) test_subgraph.cpp -o test_subgraph
+
+

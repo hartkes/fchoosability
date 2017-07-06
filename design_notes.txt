@@ -1,0 +1,26 @@
+
+2017-06-26:
+For the subset generator for bitarrays, we use the standard first/next paradigm.  This results in code that looks like this:
+    first()
+    do
+    {
+        // do something with the subset
+    } while (next());
+
+For the subgraph generator, we only use next.  We initialize the data structures so that the first call to next produces the first subgraph.  The reason we do this is so that we are running several subgraph generators in parallel (because of the rooting issue).  Hence, the set of eligible vertices might change between calls to next for a specific subgraph generator (as calls might be made to *other* subgraph generators, and could fill up a vertex's list), and we need to take that account.  Thus, the subgraph cannot be already generated, waiting for us.
+
+The code structure thus looks like this:
+    initialize()
+    while (next())
+    {
+        // do something with the subgraph
+    }
+
+The way that we achieve this is that we initialize cur_layer=0, and set up the bitarray of the 0th layer so that when next is called on it, it generates the root vertex.  The universe bitarray of the 0th layer must be initialized to have just the root.  We need to check the corner cases of what happens when the root is not eligible, or when the only subgraph generated is just the root (we do not generated singletons).
+
+This also has the added benefit of simplifying the code, since now we don't need a first() that actually generates all the levels (this duplicated the code in next()).
+
+2017-06-30:
+For each new colorability class, we'd like to just say "give me another connected subgraph to consider".  However, our subgraph generator is rooted.  Thus, we have a generator rooted at each subgraph.  To make sure that we don't generate the same subgraph from different roots, we decree that the root is the highest indexed vertex in each subgraph.  We choose the highest index instead of the lowest, since then the low index vertices will be furthest from the root, and those change the most frequently according to our subset advance technique.  Thus, when we obtain a color class from a feasible coloring, the assumption is that vertices of the color class will probably be close to the root, and hopefully we can advance quite a bit.  Of course, the most important thing here is the levels away from the root (which has nothing to do with the index of the vertices), but we'll try this.  It also makes a bunch of the bit masks very simple.
+
+
