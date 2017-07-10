@@ -92,10 +92,10 @@ bool ColorabilityClassInfo::generate_subgraph()
         int min_v=0;
         bitarray mask=1<<(n-1);
         
-        printf("Searching for vertex v to poke its generator\n");
+        //printf("Searching for vertex v to poke its generator\n");
         for (int v=n-1; v>=0; v--)
         {
-            //*
+            /*
             printf("v=%2d mask=",v);
             print_binary(mask,n);
             printf(" eligible_generators=");
@@ -113,19 +113,19 @@ bool ColorabilityClassInfo::generate_subgraph()
             mask>>=1;
         }
         
-        printf("Done with loop: min_v=%d min_L=%d\n",min_v,min_L);
+        //printf("Done with loop: min_v=%d min_L=%d\n",min_v,min_L);
         
         if (min_L<n)  // we found a vertex to poke!
         {
-            if (generator[min_v].next())
+            if (generator[min_v].next(eligible_vertices))
             {
                 // we successfully generated a new subgraph!
-                printf("We successfully generated a new subgraph!\n");
+                //printf("We successfully generated a new subgraph!\n");
                 colorability_class=
                     generator[min_v].
                     layer[generator[min_v].cur_layer].union_subset;
                 
-                //*
+                /*
                 printf("Generated subgraph!, min_v=%2d  subgraph=",min_v);
                 print_binary(colorability_class,n);
                 printf("\n");
@@ -196,12 +196,17 @@ public:
     std::vector<ColorabilityClassInfo> color_info;
     int cur_color;  // the current (and last) colorability class; thus there are cur_color+1 total colorability classes
     
+    std::vector<int> assigned_color;
+    std::vector<bitarray> color_class;  // indexed by color; indicates which vertices have been assigned this color
+    std::vector<bitarray> prev_neighbors;
+    
 // methods:
     ListAssignment(
         int n,
         const std::vector<bitarray> &neighbors,
         const std::vector<int> &f);
     
+    bool has_feasible_coloring();
     bool verify();
 };
 
@@ -255,6 +260,147 @@ ListAssignment::ListAssignment(
         mask<<=1;  // shift left 1
         mask|=1;  // and put a 1 in the low order bit
     }
+    
+    
+    // These are used for backtracking checking of feasible colorings.
+    assigned_color.resize(n);  // initialize the size of the assigned colors array
+    color_class.resize(color_info.size());
+    
+    // set up the previous neighbors bitarrays for backtracking checking of feasible colorings
+    prev_neighbors.resize(n);
+    mask=(1<<n)-1;  // declared as bitarray above; has the n lowest order 1s
+    for (int i=n-1; i>=0; i--)
+        prev_neighbors[i]=neighbors[i] & mask;
+            // only keep neighbors with lower index
+    
+}
+
+
+bool ListAssignment::has_feasible_coloring()
+{
+    // clear the data structures
+    for (int i=n-1; i>0; i--)
+        color_class[i]=0;  // no vertices have been assigned this color
+    
+    int v=0;
+    bitarray v_mask=1;  // has a 1 in bit position v
+    assigned_color[v]=0;
+    
+    while (true)
+    {
+        // When we start the loop, we are attempting to color v with assigned_color[v], and we need to check if assigned_color[v] is valid (meaning that this color is in v's list, and that no previous neighbor is colored with this color).
+        // If c[v] is valid, then we move to the next vertex.
+        // If not, we increment the color for v until we find a good color or run out of colors for v.
+        
+        if (assigned_color[v]<=cur_color)
+        {
+            if (
+                ((color_info[assigned_color[v]].colorability_class & v_mask)!=0) &&
+                        // assigned_color[v] is an admissible color for v
+                ((color_class[assigned_color[v]] & prev_neighbors[v])==0)
+                        // no prev nbr has been assigned this color
+                )
+            {
+                // assigned_color[v] can be used for v
+                
+                color_class[assigned_color[v]]|=v_mask;  // record that v has this color
+                
+                v++;  // advance to the next vertex
+                v_mask<<=1;
+                
+                if (v>=n)  // we could replace this with an & test
+                {
+                    printf("We have found a feasible coloring!\n");
+                    return true;
+                }
+                else
+                {
+                    // we check the next vertex; initialize the color we check to 0.
+                    assigned_color[v]=0;
+                }
+            }
+            else
+                // assigned_color[v] is not valid for v
+                assigned_color[v]++;
+        }
+        else  // there are no more colors to try for v
+        {
+            // hence we must backtrack
+            v--;
+            v_mask>>=1;
+            
+            if (v_mask)
+            {
+                color_class[assigned_color[v]]&=~v_mask;  // clear v's bit from this color
+                assigned_color[v]++;  // advance to a new (possible) color for v
+            }
+            else
+            {
+                // we have backed up past the first vertex, but without finding a feasible coloring
+                return false;
+            }
+            
+        }
+    }
+    
+    printf("We should never arrive here!\n");
+    exit(23);
+    
+    return false;
+}
+
+
+void print_long(long long int x, int width)
+{
+    char suffix[]=" tmbtqqssond";
+        // the first letter of thousands, million, billion, trillion, etc
+    char buffer[width];
+    int pos;  // position in the buffer
+    int last_digit;
+    int digit_count;
+    int negative;  // flag to indicate if x is negative
+    
+    for (pos=0; pos<width; pos++)
+        buffer[pos]=' ';  // put spaces in
+    
+    if (x==0)
+        buffer[width-1]='0';
+    else
+    {
+        negative=0;  // flag
+        if (x<0)
+        {
+            negative=1;
+            x=-x;
+        }
+        
+        digit_count=0;
+        pos=width-1;
+        while ((x>0) && (pos>=0))  // digits still remaining and we haven't filled the buffer
+        {
+            last_digit=x%10;
+            x/=10;
+            
+            digit_count++;
+            if ( ((digit_count%3)==1) && (digit_count>1) )
+            {
+                buffer[pos]=suffix[digit_count/3];
+                pos--;
+                if (pos<0)
+                    break;
+            }
+            buffer[pos]='0'+last_digit;
+            pos--;
+        }
+        
+        if ( (negative) && (pos>=0) )
+            buffer[pos]='-';
+    }
+    
+    //for (pos=0; pos<width; pos++)
+    //    printf("%c",buffer[pos]);
+    
+    printf("%.*s",width,buffer);  // how to print a fixed-length char array (a string should be null terminated)
 }
 
 
@@ -262,9 +408,10 @@ bool ListAssignment::verify()
 {
     // This functions contains the main loop that generates and verifies list assignments.
     
+    unsigned long long int count=0;
     while (cur_color>=0)
     {
-        //*/
+        /*/
         printf("Starting main loop, cur_color=%d\n",cur_color);
         for (int i=0; i<=cur_color; i++)
         {
@@ -285,15 +432,20 @@ bool ListAssignment::verify()
         //*/
         
         
-        
         // When this loop starts, cur_color points to the next colorability class that we will try to generate and add to our list assignment.
         
         if (color_info[cur_color].generate_subgraph())
         {
             
             // We need to check if this partial list assignment is suitable, ie, if there is a feasible coloring.
-            // TODO: At the moment, we assume it's fine.
-            
+            if (has_feasible_coloring())
+            {
+                printf("Has feasible coloring!\n");
+            }
+            else
+            {
+                printf("No feasible coloring, continuing on\n");
+            }
             
             
             // This partial list assignment is okay, so we advance.
@@ -305,6 +457,7 @@ bool ListAssignment::verify()
             {
                 color_info[cur_color+1].setup_next_from(color_info[cur_color],f);
                 cur_color++;
+                /*
                 printf("incrementing cur_color to %d\n",cur_color);
                 printf(" colorability_class=");
                 print_binary(color_info[cur_color].colorability_class,n);
@@ -312,12 +465,42 @@ bool ListAssignment::verify()
                 printf("  eligible_vertices=");
                 print_binary(color_info[cur_color].eligible_vertices,n);
                 printf("\n");
+                //*/
             }
         }
         else  // There are no more subgraphs to generate, so we must backtrack.
         {
-            printf("No more subgraphs to generate!  We must backtrack!\n");
-            exit(4);
+            //printf("No more subgraphs to generate!  We must backtrack!\n");
+            
+            count++;
+            if ((count&0xFFFFFF)==0)
+            {
+                printf("count=");// %20llu\n",count);
+                print_long(count,20);
+                printf("\n");
+            
+                //*/
+                printf("Full list assignment created, cur_color=%d\n",cur_color);
+                for (int i=0; i<=cur_color; i++)
+                {
+                    printf("color=%2d  ",i);
+                    print_binary(color_info[i].colorability_class,n);
+                    printf("\n");
+                }
+                //for (int v=0; v<n; v++)
+                //    printf("   v=%2d  L[v]=%d  f[v]=%d\n",v,color_info[cur_color].L[v],f[v]);
+                printf("  eligible_vertices=");
+                print_binary(color_info[cur_color].eligible_vertices,n);
+                printf("\n");
+                printf("eligible_generators=");
+                print_binary(color_info[cur_color].eligible_generators,n);
+                printf("\n");
+                //*/
+            }
+            
+            
+            //exit(4);
+            cur_color--;
         }
         
     }
