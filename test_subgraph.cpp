@@ -46,25 +46,23 @@ int main()
             printf("\n");
         }
         
-        eligible_vertices=(1<<G.n)-1;
         root=5;  //0;  //5;
+        //eligible_vertices=(1<<G.n)-1;
+        //                  109876543210
+        eligible_vertices=0b001001000001;
+        
+        ConnectedSubgraph S(G.n,neighbors);
+        S.initialize(root,eligible_vertices);
+        count=0;
+        printf("Starting subgraph generation.\n");
+        while (S.next(eligible_vertices))
         {
-            ConnectedSubgraph S(G.n,neighbors);
-            S.initialize(root,eligible_vertices);
-            count=0;
-            while (S.next())
-            {
-                // do something with the subgraph
-                count++;
-                printf("SUBGRAPH count=%10lu cur_layer=%2d ",count,S.cur_layer);
-                print_binary(S.layer[S.cur_layer].union_subset,G.n);
-                printf("\n");
-                
-            };
-            
-            
-        }
-        
-        
+            // do something with the subgraph
+            count++;
+            printf("SUBGRAPH count=%10lu cur_layer=%2d ",count,S.cur_layer);
+            print_binary(S.layer[S.cur_layer].union_subset,G.n);
+            printf("\n");
+        };
+        printf("   Final count=%10lu\n",count);
     }
 }

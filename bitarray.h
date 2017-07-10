@@ -64,8 +64,19 @@ bool next_subset(bitarray &x, const bitarray &universe)
     
     // Note that if x==0 (the empty set) initially, then false is returned, but x is also reset to the universe (since -1 is the all 1s vector).  We do this to avoid having a branch in this code.
     
-    bool return_value=(x!=0);
+    bool return_value=((x!=0) & (universe!=0));
+        // We need to be able to correctly handle when the universe changes.
+        // As long as x!=0 and universe!=0, then there will be a valid next subset.
+        // However, if x==0 or universe==0, then there are no more subsets 
+        // (If universe==0, then we immediately return false; we do not consider the empty set of an empty universe to be valid.  This is a choice to make the calling code easier.).
+    
     x=(x-1) & universe;
+        // This line correctly computes the next subset even when the universe changes.
+        // (and not just when the new universe is a proper subset, but any change in universe).
+        // x-1 removes the low order bit of x and then sets the lower order bits.
+        // &ed with universe keeps just those bits in universe.
+        // However, since 
+    
     return return_value;
 }
 
