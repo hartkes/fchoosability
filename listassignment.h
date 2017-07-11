@@ -113,7 +113,12 @@ bool ColorabilityClassInfo::generate_subgraph()
             mask>>=1;
         }
         
-        //printf("Done with loop: min_v=%d min_L=%d\n",min_v,min_L);
+        /*
+        printf("Done with loop: min_v=%d min_L=%d\n",min_v,min_L);
+        printf("eligible_vertices=");
+        print_binary(eligible_vertices,n);
+        printf("\n");
+        //*/
         
         if (min_L<n)  // we found a vertex to poke!
         {
@@ -178,7 +183,9 @@ void ColorabilityClassInfo::setup_next_from(const ColorabilityClassInfo &prev,
     
     for (int i=n-1; i>=0; i--)
         generator[i].copy_from(prev.generator[i]);
-    eligible_generators=prev.eligible_generators;
+    
+    eligible_generators=prev.eligible_generators & eligible_vertices;
+        // the eligible vertices is a subset of the eligible vertices
     
     colorability_class=prev.colorability_class;  // we copy this as a default, so that we can use it when adding a colorability class multiple times
 }
@@ -235,7 +242,7 @@ ListAssignment::ListAssignment(
     for (int i=n-1; i>=0; i--)
     {
         color_info[cur_color].L[i]=0;  // no colors assigned yet
-        printf("         L[%2d]=%2d\n",i,color_info[cur_color].L[i]);
+        //printf("         L[%2d]=%2d\n",i,color_info[cur_color].L[i]);
         color_info[cur_color].eligible_vertices<<=1;
         color_info[cur_color].eligible_vertices|=(f[i]>0);  // mark vertices eligible if they have room in their lists
     }
@@ -310,7 +317,7 @@ bool ListAssignment::has_feasible_coloring()
                 
                 if (v>=n)  // we could replace this with an & test
                 {
-                    printf("We have found a feasible coloring!\n");
+                    //printf("We have found a feasible coloring!\n");
                     return true;
                 }
                 else
@@ -408,7 +415,7 @@ bool ListAssignment::verify()
 {
     // This functions contains the main loop that generates and verifies list assignments.
     
-    unsigned long long int count=0;
+    unsigned long long int count=0, count2=0;
     while (cur_color>=0)
     {
         /*/
@@ -421,7 +428,8 @@ bool ListAssignment::verify()
         }
         for (int v=0; v<n; v++)
         {
-            printf("   v=%2d  L[v]=%d  f[v]=%d\n",v,color_info[cur_color].L[v],f[v]);
+            printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
+                       v,f[v],color_info[cur_color].L[v],f[v]-color_info[cur_color].L[v]);
         }
         printf("  eligible_vertices=");
         print_binary(color_info[cur_color].eligible_vertices,n);
@@ -431,78 +439,95 @@ bool ListAssignment::verify()
         printf("\n");
         //*/
         
+        for (int v=0; v<n; v++)
+            if (color_info[cur_color].L[v]>f[v])
+            {
+                printf("A list is too full!\n");
+                exit(99);
+            }
+            
         
-        // When this loop starts, cur_color points to the next colorability class that we will try to generate and add to our list assignment.
+        count++;
+        if ((count&0xFFFFFF)==0)
+        {
+            printf("count=");// %20llu\n",count);
+            print_long(count,20);
+            printf("\n");
+        
+            /*/
+            printf("Full list assignment created, cur_color=%d\n",cur_color);
+            for (int i=0; i<=cur_color; i++)
+            {
+                printf("color=%2d  ",i);
+                print_binary(color_info[i].colorability_class,n);
+                printf("\n");
+            }
+            //for (int v=0; v<n; v++)
+            //    printf("   v=%2d  L[v]=%d  f[v]=%d\n",v,color_info[cur_color].L[v],f[v]);
+            printf("  eligible_vertices=");
+            print_binary(color_info[cur_color].eligible_vertices,n);
+            printf("\n");
+            printf("eligible_generators=");
+            print_binary(color_info[cur_color].eligible_generators,n);
+            printf("\n");
+            //*/
+        }
+        
+        
+        // When this loop starts, cur_color points to the next colorability class that we will try to generate a subgraph for and add to our list assignment.
         
         if (color_info[cur_color].generate_subgraph())
         {
-            
             // We need to check if this partial list assignment is suitable, ie, if there is a feasible coloring.
-            if (has_feasible_coloring())
+            if (!has_feasible_coloring())
             {
-                printf("Has feasible coloring!\n");
-            }
-            else
-            {
-                printf("No feasible coloring, continuing on\n");
-            }
-            
-            
-            // This partial list assignment is okay, so we advance.
-            
-            while ( (color_info[cur_color].colorability_class & 
-                     color_info[cur_color].eligible_vertices)
-                   ==color_info[cur_color].colorability_class )
-                // As long as this connected subgraph is eligible, keep adding it to the list assignment.
-            {
-                color_info[cur_color+1].setup_next_from(color_info[cur_color],f);
-                cur_color++;
-                /*
-                printf("incrementing cur_color to %d\n",cur_color);
-                printf(" colorability_class=");
-                print_binary(color_info[cur_color].colorability_class,n);
-                printf("\n");
-                printf("  eligible_vertices=");
-                print_binary(color_info[cur_color].eligible_vertices,n);
-                printf("\n");
-                //*/
-            }
-        }
-        else  // There are no more subgraphs to generate, so we must backtrack.
-        {
-            //printf("No more subgraphs to generate!  We must backtrack!\n");
-            
-            count++;
-            if ((count&0xFFFFFF)==0)
-            {
-                printf("count=");// %20llu\n",count);
-                print_long(count,20);
-                printf("\n");
-            
-                //*/
-                printf("Full list assignment created, cur_color=%d\n",cur_color);
-                for (int i=0; i<=cur_color; i++)
+                // This partial list assignment needs to be advanced.
+                
+                while (true)
                 {
-                    printf("color=%2d  ",i);
-                    print_binary(color_info[i].colorability_class,n);
+                    color_info[cur_color+1].setup_next_from(color_info[cur_color],f);
+                    cur_color++;
+                    /*
+                    printf("incrementing cur_color to %d\n",cur_color);
+                    printf(" colorability_class=");
+                    print_binary(color_info[cur_color].colorability_class,n);
                     printf("\n");
+                    printf("  eligible_vertices=");
+                    print_binary(color_info[cur_color].eligible_vertices,n);
+                    printf("\n");
+                    //*/
+                    
+                    if ( (color_info[cur_color].colorability_class & 
+                          color_info[cur_color].eligible_vertices)
+                        ==color_info[cur_color].colorability_class )
+                        // this subgraph remains eligible, so we'll try to add it again
+                        if (has_feasible_coloring())
+                            break;  // proceed to the next subgraph for this colorability class
+                        else
+                            ;  // we should go back to the beginning of the loop and add this subgraph again
+                    else
+                        break;  // we'll need to find the next subgraph for this colorability class
+                        
                 }
-                //for (int v=0; v<n; v++)
-                //    printf("   v=%2d  L[v]=%d  f[v]=%d\n",v,color_info[cur_color].L[v],f[v]);
-                printf("  eligible_vertices=");
-                print_binary(color_info[cur_color].eligible_vertices,n);
-                printf("\n");
-                printf("eligible_generators=");
-                print_binary(color_info[cur_color].eligible_generators,n);
-                printf("\n");
-                //*/
             }
-            
-            
-            //exit(4);
-            cur_color--;
+            else  // There is a feasible coloring, so we continue on to the next subgraph.
+            {
+                ;  // we do nothing and go back to the beginning of the loop to generate the next subgraph
+            }
         }
-        
+        else
+        {
+            // There are no more subgraphs to generate, but have not found a suitable coloring.
+            // This is a violation only if every vertex has a full list.
+            
+            // TODO:  We need to handle singletons.
+            count2++;
+            printf("No more subgraphs to generate!, count2=%llu  count=%llu\n",count2,count);
+            
+            //exit(3);
+            
+            cur_color--;  // we need to backtrack
+        }
     }
     
     
