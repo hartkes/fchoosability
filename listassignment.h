@@ -213,7 +213,7 @@ public:
         const std::vector<bitarray> &neighbors,
         const std::vector<int> &f);
     
-    bool has_feasible_coloring();
+    bool has_feasible_coloring(bitarray vertices_to_skip);
     bool verify();
 };
 
@@ -283,14 +283,32 @@ ListAssignment::ListAssignment(
 }
 
 
-bool ListAssignment::has_feasible_coloring()
+bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
 {
     // clear the data structures
     for (int i=n-1; i>0; i--)
         color_class[i]=0;  // no vertices have been assigned this color
     
+    /*
+    printf("Checking coloring, vertices_to_skip=");
+    print_binary(vertices_to_skip,n);
+    printf("\n");
+    //*/
+    
     int v=0;
     bitarray v_mask=1;  // has a 1 in bit position v
+    while (v_mask & vertices_to_skip)
+    {
+        v++;
+        v_mask<<=1;
+        if (v>=n)  // there are no vertices to check; 
+                   // TODO: we could replace this with a bitwise check outside the loop
+        {
+            printf("There are no vertices to check for coloring!\n");
+            return true;
+        }
+    }
+    
     assigned_color[v]=0;
     
     while (true)
@@ -298,6 +316,13 @@ bool ListAssignment::has_feasible_coloring()
         // When we start the loop, we are attempting to color v with assigned_color[v], and we need to check if assigned_color[v] is valid (meaning that this color is in v's list, and that no previous neighbor is colored with this color).
         // If c[v] is valid, then we move to the next vertex.
         // If not, we increment the color for v until we find a good color or run out of colors for v.
+        
+        /*
+        printf("v=%2d  ",v);
+        for (int i=0; i<=v; i++)
+            printf(" %2d",assigned_color[i]);
+        printf("\n");
+        //*/
         
         if (assigned_color[v]<=cur_color)
         {
@@ -314,6 +339,14 @@ bool ListAssignment::has_feasible_coloring()
                 
                 v++;  // advance to the next vertex
                 v_mask<<=1;
+                
+                while (v_mask & vertices_to_skip)  // skip vertices if necessary
+                {
+                    v++;
+                    v_mask<<=1;
+                    if (v>=n)
+                        break;
+                }
                 
                 if (v>=n)  // we could replace this with an & test
                 {
@@ -336,7 +369,15 @@ bool ListAssignment::has_feasible_coloring()
             v--;
             v_mask>>=1;
             
-            if (v_mask)
+            while (v_mask & vertices_to_skip)  // skip vertices if necessary
+            {
+                v--;
+                v_mask>>=1;
+                if (!v_mask)
+                    break;
+            }
+            
+            if (v_mask)  // hence, v>=0
             {
                 color_class[assigned_color[v]]&=~v_mask;  // clear v's bit from this color
                 assigned_color[v]++;  // advance to a new (possible) color for v
@@ -344,6 +385,7 @@ bool ListAssignment::has_feasible_coloring()
             else
             {
                 // we have backed up past the first vertex, but without finding a feasible coloring
+                //printf("There is NO feasible coloring!\n");
                 return false;
             }
             
@@ -448,14 +490,14 @@ bool ListAssignment::verify()
             
         
         count++;
-        if ((count&0xFFFFFF)==0)
+        if ((count&0xFFFF)==0)  //((count&0xFFFFFF)==0)
         {
             printf("count=");// %20llu\n",count);
             print_long(count,20);
             printf("\n");
         
-            /*/
-            printf("Full list assignment created, cur_color=%d\n",cur_color);
+            //*/
+            printf("cur_color=%d\n",cur_color);
             for (int i=0; i<=cur_color; i++)
             {
                 printf("color=%2d  ",i);
@@ -479,7 +521,7 @@ bool ListAssignment::verify()
         if (color_info[cur_color].generate_subgraph())
         {
             // We need to check if this partial list assignment is suitable, ie, if there is a feasible coloring.
-            if (!has_feasible_coloring())
+            if (!has_feasible_coloring(0))
             {
                 // This partial list assignment needs to be advanced.
                 
@@ -501,7 +543,7 @@ bool ListAssignment::verify()
                           color_info[cur_color].eligible_vertices)
                         ==color_info[cur_color].colorability_class )
                         // this subgraph remains eligible, so we'll try to add it again
-                        if (has_feasible_coloring())
+                        if (has_feasible_coloring(0))
                             break;  // proceed to the next subgraph for this colorability class
                         else
                             ;  // we should go back to the beginning of the loop and add this subgraph again
@@ -520,13 +562,35 @@ bool ListAssignment::verify()
             // There are no more subgraphs to generate, but have not found a suitable coloring.
             // This is a violation only if every vertex has a full list.
             
-            // TODO:  We need to handle singletons.
-            count2++;
-            printf("No more subgraphs to generate!, count2=%llu  count=%llu\n",count2,count);
-            
-            //exit(3);
-            
-            cur_color--;  // we need to backtrack
+            if (!has_feasible_coloring(color_info[cur_color].eligible_vertices))
+                // vertices that are eligible do not have full lists, and so can have a singleton added to them.  Thus, they can always be colored.  So we skip them when checking for a feasible coloring.
+            {
+                count2++;
+                printf("No more subgraphs to generate!, no feasible coloring, count2=%llu  count=%llu\n",count2,count);
+                
+                //*/
+                printf("Full list assignment created, cur_color=%d\n",cur_color);
+                for (int i=0; i<=cur_color; i++)
+                {
+                    printf("color=%2d  ",i);
+                    print_binary(color_info[i].colorability_class,n);
+                    printf("\n");
+                }
+                for (int v=0; v<n; v++)
+                    printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
+                            v,f[v],color_info[cur_color].L[v],f[v]-color_info[cur_color].L[v]);
+                printf("  eligible_vertices=");
+                print_binary(color_info[cur_color].eligible_vertices,n);
+                printf("\n");
+                printf("eligible_generators=");
+                print_binary(color_info[cur_color].eligible_generators,n);
+                printf("\n");
+                //*/
+                
+                exit(2);
+            }
+            else  // We have a feasible coloring, so proceed with the search.
+                cur_color--;  // Since there are no more subgraphs to generate, we need to backtrack.
         }
     }
     
