@@ -156,10 +156,10 @@ int ConnectedSubgraph::next(const bitarray additional_constraints)
         i++;
     }
     
+    cur_layer=i;
+    
     /*
     printf("i=%d\n",i);
-    
-    cur_layer=i;
     printf("Trying to advance layer %d\n",cur_layer);
     //*/
     
@@ -182,6 +182,12 @@ int ConnectedSubgraph::next(const bitarray additional_constraints)
         //     return false;
         // UPDATE: That's not entirely true, because the set of eligible vertices could change.  So we have a check for cur_layer==0 at the our bottom return statement.
     }
+    
+    /*
+    printf("Advanced cur_layer=%2d to l_s=",cur_layer);
+    print_binary(layer[cur_layer].layer_subset,n);
+    printf("\n");
+    //*/
     
     if ((cur_layer==1 && layer[cur_layer].layer_subset==0))
         // we have backed up so we have the root on layer 0 and the empty set on layer 1.
