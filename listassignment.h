@@ -289,7 +289,7 @@ ListAssignment::ListAssignment(
 bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
 {
     // clear the data structures
-    for (int i=n-1; i>0; i--)
+    for (int i=cur_color; i>=0; i--)
         color_class[i]=0;  // no vertices have been assigned this color
     
     /*
@@ -317,6 +317,7 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
     if (vertices_to_skip & (1<<n) )
     {
         //*
+        printf("\nChecking for feasible coloring.\n");
         for (int i=0; i<n; i++)
         {
             printf("v=%2d  prev_neighbors=",i);
@@ -326,7 +327,6 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
         printf("\n");
         //*/
     }
-
     
     while (true)
     {
@@ -337,20 +337,60 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
         if (vertices_to_skip & (1<<n) )
         {
             //*
+            printf("cur_color=%d ",cur_color);
             printf("v=%2d  ",v);
             print_binary(v_mask,n);
             printf("  ");
             for (int i=0; i<=v; i++)
                 printf(" %2d",assigned_color[i]);
             //printf("\n");
-            printf("color_class[ass[v]]=");
+            printf("  color_class[ass[v]]=");
             print_binary(color_class[assigned_color[v]],n);
-            printf("color_info[ass[v]].cclass=");
+            printf("  color_info[ass[v]].cclass=");
             print_binary(color_info[assigned_color[v]].colorability_class,n);
             printf("\n");
             //*/
         }
         
+        /*/ Sanity check that assigned_color[] and color_class[] have the same information.
+        bitarray mask=1;
+        for (int i=0; i<=v; i++)  // vertex
+        {
+            if ((mask & vertices_to_skip)==0)
+            {
+                for (int j=0; j<=cur_color; j++)  // color
+                {
+                    if (i!=v && assigned_color[i]==j)
+                    {
+                        if ((color_class[j] & mask)==0)  // the bit should be set
+                        {
+                            printf("Discrepancy!  color not set when it should be!\n");
+                            printf("i=%2d color=%2d  color_class[j]=",i,j);
+                            print_binary(color_class[j],n);
+                            printf("  mask=");
+                            print_binary(mask,n);
+                            printf("\n");
+                            exit(99);
+                        }
+                    }
+                    else
+                        if ((color_class[j] & mask)!=0)  // the bit should NOT be set
+                        {
+                            printf("Discrepancy!  color set when it should NOT be!\n");
+                            printf("i=%2d color=%2d  color_class[j]=",i,j);
+                            print_binary(color_class[j],n);
+                            printf("  mask=");
+                            print_binary(mask,n);
+                            printf("\n");
+                            exit(99);
+                        }
+                }
+            }
+            mask<<=1;
+        }
+        //*/
+        
+
         if (assigned_color[v]<=cur_color)
         {
             if (
