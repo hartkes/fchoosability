@@ -214,7 +214,7 @@ public:
         const std::vector<int> &f);
     
     bool has_feasible_coloring(bitarray vertices_to_skip);
-    bool verify();
+    bool verify(int res,int mod,int splitlevel);
 };
 
 
@@ -307,7 +307,7 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
         if (v>=n)  // there are no vertices to check; 
                    // TODO: we could replace this with a bitwise check outside the loop
         {
-            printf("There are no vertices to check for coloring!\n");
+            //printf("There are no vertices to check for coloring!\n");
             return true;
         }
     }
@@ -520,11 +520,14 @@ void print_long(long long int x, int width)
 }
 
 
-bool ListAssignment::verify()
+bool ListAssignment::verify(int res,int mod,int splitlevel)
 {
     // This functions contains the main loop that generates and verifies list assignments.
     
-    unsigned long long int count=0, count2=0;
+    unsigned long long int count=0, num_feasible_colorings=0;
+    int odometer=mod;  // for parallelization; keeps track of the number of nodes of the search tree at level splitlevel
+                       // remember that decrementing odometer happens before testing against the residue
+
     while (cur_color>=0)
     {
         /*/
@@ -548,19 +551,22 @@ bool ListAssignment::verify()
         printf("\n");
         //*/
         
+        /*
         for (int v=0; v<n; v++)
             if (color_info[cur_color].L[v]>f[v])
             {
                 printf("A list is too full!\n");
                 exit(99);
             }
-            
+        //*/
         
         count++;
         if ((count&0xFFFFF)==0)  //((count&0xFFFFFF)==0)
         {
             printf("count=");// %20llu\n",count);
             print_long(count,20);
+            printf("     num_feasible_colorings=");
+            print_long(num_feasible_colorings,15);
             printf("\n");
         
             //*/
@@ -587,6 +593,8 @@ bool ListAssignment::verify()
         
         if (color_info[cur_color].generate_subgraph())
         {
+            //printf("Successfully generated a new subgraph to use as a colorability class.\n");
+            
             // We need to check if this partial list assignment is suitable, ie, if there is a feasible coloring.
             if (!has_feasible_coloring(0))
             {
@@ -594,8 +602,31 @@ bool ListAssignment::verify()
                 
                 while (true)
                 {
-                    color_info[cur_color+1].setup_next_from(color_info[cur_color],f);
+                    //*
+                    // This code allows for parallelization.
+                    if (cur_color==splitlevel)
+                        // we need to check whether we should go further (deepen the search tree) or not
+                    {
+                        odometer--;
+                        if (odometer<0)
+                            odometer=mod-1;  // reset the odometer
+                        
+                        //printf("v=%d splitlevel=%d odometer=%d residue=%d modulus=%d\n",v,splitlevel,odometer,res,mod);
+                        
+                        if (odometer!=res)  // we will not check this branch
+                        {
+                            // we continue on the level of cur_color with the next colorability class
+                            //printf("cur_color=%d splitlevel=%d odometer=%d residue=%d modulus=%d\n",cur_color,splitlevel,odometer,res,mod);
+                            
+                            // and now we just want to loop again
+                            break;
+                        }
+                    }
+                    //*/
+                    
+                    color_info[cur_color+1].setup_next_from(color_info[cur_color],f);  // initialize the new colorability_class info
                     cur_color++;
+                    
                     /*
                     printf("incrementing cur_color to %d\n",cur_color);
                     printf(" colorability_class=");
@@ -621,6 +652,9 @@ bool ListAssignment::verify()
             }
             else  // There is a feasible coloring, so we continue on to the next subgraph.
             {
+                // We keep track of feasible colorings separately for verifying the parallelization is working correctly.
+                num_feasible_colorings++;
+                
                 ;  // we do nothing and go back to the beginning of the loop to generate the next subgraph
             }
         }
@@ -628,15 +662,15 @@ bool ListAssignment::verify()
         {
             // There are no more subgraphs to generate, but have not found a suitable coloring.
             // This is a violation only if every vertex has a full list.
+            //printf("Could not generate any more subgraphs\n");
             
-            // Note that color_info[cur_color].colorability_class is NOT valid.
+            // Note that color_info[cur_color].colorability_class is NOT valid, so we back up.
             cur_color--;
             
-            if (!has_feasible_coloring(color_info[cur_color].eligible_vertices))
+            if (!has_feasible_coloring(color_info[cur_color+1].eligible_vertices))  // but we need to include those vertices
                 // vertices that are eligible do not have full lists, and so can have a singleton added to them.  Thus, they can always be colored.  So we skip them when checking for a feasible coloring.
             {
-                count2++;
-                printf("No more subgraphs to generate!, no feasible coloring, count2=%llu  count=%llu\n",count2,count);
+                printf("No more subgraphs to generate!, no feasible coloring, count=%llu\n",count);
                 
                 // print that out
                 has_feasible_coloring(color_info[cur_color].eligible_vertices | (1<<n) );
@@ -651,24 +685,25 @@ bool ListAssignment::verify()
                 }
                 for (int v=0; v<n; v++)
                     printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
-                            v,f[v],color_info[cur_color].L[v],f[v]-color_info[cur_color].L[v]);
+                            v,f[v],color_info[cur_color+1].L[v],f[v]-color_info[cur_color+1].L[v]);
                 printf("  eligible_vertices=");
-                print_binary(color_info[cur_color].eligible_vertices,n);
+                print_binary(color_info[cur_color+1].eligible_vertices,n);
                 printf("\n");
                 printf("eligible_generators=");
-                print_binary(color_info[cur_color].eligible_generators,n);
+                print_binary(color_info[cur_color+1].eligible_generators,n);
                 printf("\n");
                 //*/
                 
-                exit(2);
+                return false;
             }
             else  // We have a feasible coloring, so proceed with the search.
-                ;//above //cur_color--;  // Since there are no more subgraphs to generate, we need to backtrack.
+                ;
         }
     }
     
-    
-    return false;
+    printf("All list assignments checked, final count=%llu, num_feasible_colorings=%llu\n",count,num_feasible_colorings);
+    // No bad list assignment has been found, so the graph is f-choosable.
+    return true;
 }
 
 
