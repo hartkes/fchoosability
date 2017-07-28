@@ -286,6 +286,7 @@ ListAssignment::ListAssignment(
 }
 
 
+inline
 bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
 {
     // clear the data structures
@@ -563,7 +564,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
         count++;
         if ((count&0xFFFFF)==0)  //((count&0xFFFFFF)==0)
         {
-            printf("count=");// %20llu\n",count);
+            printf("\ncount=");// %20llu\n",count);
             print_long(count,20);
             printf("     num_feasible_colorings=");
             print_long(num_feasible_colorings,15);
@@ -571,14 +572,26 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
         
             //*/
             printf("cur_color=%d\n",cur_color);
-            for (int i=0; i<=cur_color; i++)
+            
+            int maxvalue=(cur_color>=n ? cur_color : n-1);
+            for (int i=0; i<=maxvalue; i++)
             {
-                printf("color=%2d  ",i);
-                print_binary(color_info[i].colorability_class,n);
+                if (i<=cur_color)
+                {
+                    printf("color=%2d  ",i);
+                    print_binary(color_info[i].colorability_class,n);
+                }
+                else
+                {
+                    printf("            ");
+                    for (int k=0; k<n; k++)
+                        printf(" ");
+                }
+                if (i<n)
+                    printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d",
+                        i,f[i],color_info[cur_color].L[i],f[i]-color_info[cur_color].L[i]);
                 printf("\n");
             }
-            //for (int v=0; v<n; v++)
-            //    printf("   v=%2d  L[v]=%d  f[v]=%d\n",v,color_info[cur_color].L[v],f[v]);
             printf("  eligible_vertices=");
             print_binary(color_info[cur_color].eligible_vertices,n);
             printf("\n");
@@ -607,6 +620,9 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     if (cur_color==splitlevel)
                         // we need to check whether we should go further (deepen the search tree) or not
                     {
+                        // FIXME: TODO:  This break does not allow the search to expand beyond the splitlevel.
+                        //break;
+                        
                         odometer--;
                         if (odometer<0)
                             odometer=mod-1;  // reset the odometer
@@ -621,6 +637,8 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                             // and now we just want to loop again
                             break;
                         }
+                        
+                        printf("Odometer tick! cur_color=%d splitlevel=%d odometer=%d residue=%d modulus=%d\n",cur_color,splitlevel,odometer,res,mod);
                     }
                     //*/
                     
