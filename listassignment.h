@@ -592,10 +592,10 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                         i,f[i],color_info[cur_color].L[i],f[i]-color_info[cur_color].L[i]);
                 printf("\n");
             }
-            printf("  eligible_vertices=");
+            printf(" el_verts=");
             print_binary(color_info[cur_color].eligible_vertices,n);
             printf("\n");
-            printf("eligible_generators=");
+            printf("  el_gens=");
             print_binary(color_info[cur_color].eligible_generators,n);
             printf("\n");
             //*/
@@ -704,10 +704,10 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                 for (int v=0; v<n; v++)
                     printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
                             v,f[v],color_info[cur_color+1].L[v],f[v]-color_info[cur_color+1].L[v]);
-                printf("  eligible_vertices=");
+                printf(" el_verts=");
                 print_binary(color_info[cur_color+1].eligible_vertices,n);
                 printf("\n");
-                printf("eligible_generators=");
+                printf("  el_gens=");
                 print_binary(color_info[cur_color+1].eligible_generators,n);
                 printf("\n");
                 //*/
