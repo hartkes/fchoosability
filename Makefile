@@ -28,8 +28,8 @@ all: fchoosability_nullstellensatz fchoosability_exhaustive
 debug:
 	make "BUILD=debug"
 
-fchoosability_exhaustive: fchoosability_exhaustive.cpp graph.h fgraph.h bitarray.h subgraph.h listassignment.h
-	$(CXX) $(CPPFLAGS) $(INCLUDES) fchoosability_exhaustive.cpp $(LIBRARIES) -o fchoosability_exhaustive
+fchoosability_exhaustive: fchoosability_exhaustive.cpp graph.h fgraph.h bitarray.h subgraph.h colorabilityclass.h listassignment.h
+	$(CXX) $(CPPFLAGS) fchoosability_exhaustive.cpp -o fchoosability_exhaustive
 
 fchoosability_nullstellensatz: fchoosability_nullstellensatz.cpp graph.h fgraph.h compositions.h
 	$(CXX) $(CPPFLAGS) $(INCLUDES) fchoosability_nullstellensatz.cpp $(LIBRARIES) -o fchoosability_nullstellensatz
