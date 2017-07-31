@@ -146,8 +146,9 @@ int ConnectedSubgraph::next(const bitarray additional_constraints)
     // We search for the highest layer whose subset contains an ineligible vertex.
     int i=0;
     while ( (i<cur_layer) &&
-            ((layer[i].layer_subset & eligible_vertices) == layer[i].layer_subset) )
-            // FIXME: Testing if bitarray x is a subset of y might be better as (x & ~y) == 0.
+            ((layer[i].layer_subset & (~eligible_vertices)) == 0) )
+            // We test if bitarray layer[i].layer_subset is a subset of eligible_vertices.
+            // We test if bitarray x is a subset of bitarry y using (x & ~y) == 0.
             // This is just the negation of the implication x=>y.
     {
         // layer[i].layer_universe&=eligible_vertices;
