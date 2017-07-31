@@ -104,6 +104,37 @@ bool ColorabilityClassInfo::generate_subgraph()
             printf("\n");
             //*/
             
+            //*
+            if (L[v]==0)
+                // this if needs to be separate, since we're also testing vertices that might not have eligible generators
+            {
+                //printf("We found L[%d]==0\n",v);
+                eligible_generators|=1<<n;  // this ensures the following loop terminates
+                min_v=v;
+                while (!(mask & eligible_generators))
+                {
+                    min_v++;
+                    mask<<=1;
+                }
+                eligible_generators^=1<<n;
+                if (mask & eligible_vertices)
+                {
+                    // We can advance the vertex min_v, and it has the potential of covering v.
+                    //printf("We're advancing min_v=%d\n",min_v);
+                    min_L=0;
+                    break;
+                }
+                else
+                {
+                    // There's no other way for v to get a color other than to add a singleton.
+                    //printf("Adding singleton to v=%d\n",v);
+                    colorability_class=1<<v;
+                    L[v]=n;  // this prevents this colorability_class from being added multiple times; note that we can't access f[v] from here, but we assume that f[v]<n.
+                    return true;
+                }
+            }
+            //*/
+            
             if ( (mask & eligible_generators) &&
                     (L[v]<min_L) )
             {
@@ -142,11 +173,47 @@ bool ColorabilityClassInfo::generate_subgraph()
             {
                 eligible_generators^=(1<<min_v);  // vertex min_v no longer has an eligible generator, since it has finished generating all its subgraphs
                 
-                // We try to find another generator to poke.
+                // We need to check if any vertex v with L[v]==0 now has no way to have a color added to its list.
+                //*
+                if (eligible_generators)  // only test if there are eligible generators remaining
+                {
+                    for (int v=n-1; v>0; v--)  // should we include v==0?  Problem with test below.
+                            // starting at min_v doesn't work, since when there had previously been two vertices to mark, only one was, and we might need to check the new one now.
+                    {
+                        if (L[v]==0 && 
+                            ( ( (((1<<n)-1) ^ ((1<<v)-1)) & eligible_generators)==0 )
+                                // problem with this test when v==0
+                        )
+                        {
+                            /*
+                            if (v>min_v)
+                            {
+                                printf("WEIRD! L[%d]==0, but no way it can be generated min_v=%d.\n",v,min_v);
+                                printf("  el_gens=");
+                                print_binary(eligible_generators,n);
+                                printf("\n");
+                            }
+                            //*/
+                            
+                            colorability_class=1<<v;
+                            L[v]=n;  // this prevents this colorability_class from being added multiple times; note that we can't access f[v] from here, but we assume that f[v]<n.
+                            return true;
+                            
+                            // FIXME:  What if more than one vertex becomes unreachable?
+                            // The problem is that we need to add different colorability classes, which we can't do here.  But that should happen in the next call. (?)
+                        }
+                    }
+                }
+                else
+                    return false;  // there no more eligible generators
+                //*/
+                
+                
+                // We loop again, trying to find another generator to poke.
             }
         }
         else
-            return false;
+            return false;  // there are no subgraphs left to generate
     }
     
     // we should never get here, but in case we do:
@@ -185,7 +252,7 @@ void ColorabilityClassInfo::setup_next_from(const ColorabilityClassInfo &prev,
         generator[i].copy_from(prev.generator[i]);
     
     eligible_generators=prev.eligible_generators & eligible_vertices;
-        // the eligible vertices is a subset of the eligible vertices
+        // the eligible generators is a subset of the eligible vertices
     
     colorability_class=prev.colorability_class;  // we copy this as a default, so that we can use it when adding a colorability class multiple times
 }

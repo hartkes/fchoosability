@@ -12,6 +12,7 @@
 #include "fgraph.h"
 #include "bitarray.h"
 #include "subgraph.h"
+#include "colorabilityclass.h"
 #include "listassignment.h"
 
 
