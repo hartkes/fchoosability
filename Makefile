@@ -3,6 +3,7 @@ CXX=g++
 #CXX=clang++
 
 CPPFLAGS= -std=c++11 -O5
+# use -std=c++0x on colibri because the compiler is so old
 
 # -D_GLIBCXX_DEBUG (among other things) turns on array bounds checking for [] on std::vector
 DEBUGFLAGS= -Wall -g -D_GLIBCXX_DEBUG -fsanitize=address
