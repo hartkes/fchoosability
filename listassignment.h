@@ -482,10 +482,12 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     printf("\n");
                     //*/
                     
-                    if ( (color_info[cur_color].colorability_class & 
-                          color_info[cur_color].eligible_vertices)
-                        ==color_info[cur_color].colorability_class )
+                    if ( ( color_info[cur_color].colorability_class & 
+                          ~color_info[cur_color].eligible_vertices) == 0 )
                         // this subgraph remains eligible, so we'll try to add it again
+                        // We test if colorability_class is a subset of eligible vertices.
+                        // We test if bitarray x is a subset of bitarry y using (x & ~y) == 0.
+                        // This is just the negation of the implication x=>y.
                         if (has_feasible_coloring(0))
                             break;  // proceed to the next subgraph for this colorability class
                         else
