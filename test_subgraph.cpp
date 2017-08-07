@@ -46,7 +46,7 @@ int main()
             printf("\n");
         }
         
-        root=5;  //0;  //5;
+        root=0;  //0;  //5;
         //eligible_vertices=(1<<G.n)-1;
         //                  109876543210
         eligible_vertices=0b001001000001;
