@@ -28,3 +28,21 @@ There's a problem that a high-index vertex might have no colors in its list (L[v
 Additionally, when picking the next generator, it might well be *lower indexed* than a vertex v with L[v]==0, and so v has no hope of being generated.
 But there's an issue: singletons don't occur until the end.  So we *know* this vertex *must* be put in as a singleton.  Maybe once we detect this, we just add a colorability class consisting of the singleton?  Or we could modify "vertices_to_skip", but the hope was to eliminate that from the has_feasible() function code for most calls.
 
+2017-08-14:
+There are still some ongoing issues about how to handle singletons and when to detect that there is an actual bad list.
+
+Previously: singletons were not explicitly generated.  Thus, any partial list assignment could be expanded to full list assignment (where each vertex has a full list) by adding singletons at the end.  When no more subgraphs could be added to a partial list assignment (either because the vertices' lists are full, or the subgraph generators are finished), we add singletons (virtually using vertices_to_skip) and check if there is a feasible coloring.
+
+The problem as noted above arises if (after a while) there is a vertex with an empty list that has no remaining way to have a color added to its list.  When this detected, ideally we would just add a singleton.  But in the previous scheme, singletons were only added at the end.  So a lot of time was wasted adding other subgraphs and checking for feasible colorings (there aren't any), until running out of subgraphs and adding the singleton.  This is inefficient.
+
+New plan:  I changed the subgraph generator to generate the singletons as the last subgraph.  Now the singletons are treated just like every other subgraph, and can be generated as needed.  However, now it's difficult to tell if a partial list assignment that can't be expanded and without a feasible coloring is a counterexample or not.  Perhaps we backed up to this partial list assignment.  And the test code I wrote fails, identifying such partial list assignments as counterexamples when they are not.  I attempted to add a flag indicating whether we had backtracked to this partial list assignment or not, but this also failed.
+
+What should happen when a singleton is added?  Should the vertex be marked as ineligible (ie, its list is full)?  But what if a subgraph going through that vertex needs to be added?
+
+Is all of this compatible with the assumption that colorability classes are connected?
+
+Another issue: I wanted to restrict the multiplicity of a colorability class to its number of vertices.  But again we have the issue of whether a partial list coloring is a counterexample or not.  Perhaps a lemma can be proved here?  We need some reasonable bound on the f[v]s, namely that there are at most the degree.
+
+Also: The Small Pot Lemma should apply to everything I've been talking about above.  It seems independent of those issues.  A good example of sharpness in the Small Pot Lemma: colorability classes of size 2 that form a tree.
+
+

@@ -104,11 +104,12 @@ bool ColorabilityClassInfo::generate_subgraph()
             printf("\n");
             //*/
             
-            //*
-            if (L[v]==0)
+            /*
+            if ((mask & eligible_vertices) && (L[v]==0))
                 // this if needs to be separate from the if below, since we're also testing vertices that might not have eligible generators
             {
-                //printf("We found L[%d]==0\n",v);
+                printf("We found L[%d]==0\n",v);
+                
                 eligible_generators|=1<<n;  // this ensures the following loop terminates
                 min_v=v;
                 while (!(mask & eligible_generators))
@@ -116,20 +117,29 @@ bool ColorabilityClassInfo::generate_subgraph()
                     min_v++;
                     mask<<=1;
                 }
-                eligible_generators^=1<<n;
-                if (mask & eligible_vertices)
+                eligible_generators^=1<<n;  // clear this high bit
+                
+                if (mask & eligible_generators)
+                    // Note that eligible_generators is a subset of eligible_vertices.
                 {
                     // We can advance the vertex min_v, and it has the potential of covering v.
-                    //printf("We're advancing min_v=%d\n",min_v);
+                    printf("We're advancing min_v=%d\n",min_v);
                     min_L=0;
                     break;
                 }
                 else
                 {
                     // There's no other way for v to get a color other than to add a singleton.
-                    //printf("Adding singleton to v=%d\n",v);
+                    printf("Adding singleton to v=%d\n",v);
+                    printf("el_verts=");
+                    print_binary(eligible_vertices,n);
+                    printf("\n");
+                    printf(" el_gens=");
+                    print_binary(eligible_generators,n);
+                    printf("\n");
                     colorability_class=1<<v;
-                    L[v]=n;  // this prevents this colorability_class from being added multiple times; note that we can't access f[v] from here, but we assume that f[v]<n.
+                    eligible_vertices&=~(1<<v);
+                        // this prevents this colorability_class from being added multiple times
                     return true;
                 }
             }
@@ -174,7 +184,7 @@ bool ColorabilityClassInfo::generate_subgraph()
                 eligible_generators^=(1<<min_v);  // vertex min_v no longer has an eligible generator, since it has finished generating all its subgraphs
                 
                 // We need to check if any vertex v with L[v]==0 now has no way to have a color added to its list.
-                //*
+                /*
                 if (eligible_generators)  // only test if there are eligible generators remaining
                 {
                     for (int v=n-1; v>0; v--)  // should we include v==0?  Problem with test below.
@@ -193,10 +203,12 @@ bool ColorabilityClassInfo::generate_subgraph()
                                 print_binary(eligible_generators,n);
                                 printf("\n");
                             }
-                            //*/
+                            //*-/
                             
                             colorability_class=1<<v;
-                            L[v]=n;  // this prevents this colorability_class from being added multiple times; note that we can't access f[v] from here, but we assume that f[v]<n.
+                            eligible_vertices^=1<<v;
+                                // this prevents this colorability_class from being added multiple times
+                                // FIXME:  Is this okay?
                             return true;
                             
                             // FIXME:  What if more than one vertex becomes unreachable?

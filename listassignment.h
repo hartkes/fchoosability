@@ -40,7 +40,7 @@ public:
         const std::vector<bitarray> &neighbors,
         const std::vector<int> &f);
     
-    bool has_feasible_coloring(bitarray vertices_to_skip);
+    bool has_feasible_coloring();
     bool verify(int res,int mod,int splitlevel);
 };
 
@@ -114,47 +114,27 @@ ListAssignment::ListAssignment(
 
 
 inline
-bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
+bool ListAssignment::has_feasible_coloring()
 {
     // clear the data structures
     for (int i=cur_color; i>=0; i--)
         color_class[i]=0;  // no vertices have been assigned this color
     
-    /*
-    printf("Checking coloring, vertices_to_skip=");
-    print_binary(vertices_to_skip,n);
-    printf("\n");
-    //*/
-    
     int v=0;
     bitarray v_mask=1;  // has a 1 in bit position v
-    while (v_mask & vertices_to_skip)
-    {
-        v++;
-        v_mask<<=1;
-        if (v>=n)  // there are no vertices to check; 
-                   // TODO: we could replace this with a bitwise check outside the loop
-        {
-            //printf("There are no vertices to check for coloring!\n");
-            return true;
-        }
-    }
     
     assigned_color[v]=0;
     
-    if (vertices_to_skip & (1<<n) )
+    /*
+    printf("\nChecking for feasible coloring.\n");
+    for (int i=0; i<n; i++)
     {
-        //*
-        printf("\nChecking for feasible coloring.\n");
-        for (int i=0; i<n; i++)
-        {
-            printf("v=%2d  prev_neighbors=",i);
-            print_binary(prev_neighbors[i],n);
-            printf("\n");
-        }
+        printf("v=%2d  prev_neighbors=",i);
+        print_binary(prev_neighbors[i],n);
         printf("\n");
-        //*/
     }
+    printf("\n");
+    //*/
     
     while (true)
     {
@@ -162,23 +142,20 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
         // If c[v] is valid, then we move to the next vertex.
         // If not, we increment the color for v until we find a good color or run out of colors for v.
         
-        if (vertices_to_skip & (1<<n) )
-        {
-            //*
-            printf("cur_color=%d ",cur_color);
-            printf("v=%2d  ",v);
-            print_binary(v_mask,n);
-            printf("  ");
-            for (int i=0; i<=v; i++)
-                printf(" %2d",assigned_color[i]);
-            //printf("\n");
-            printf("  color_class[ass[v]]=");
-            print_binary(color_class[assigned_color[v]],n);
-            printf("  color_info[ass[v]].cclass=");
-            print_binary(color_info[assigned_color[v]].colorability_class,n);
-            printf("\n");
-            //*/
-        }
+        /*
+        printf("cur_color=%d ",cur_color);
+        printf("v=%2d  ",v);
+        print_binary(v_mask,n);
+        printf("  ");
+        for (int i=0; i<=v; i++)
+            printf(" %2d",assigned_color[i]);
+        //printf("\n");
+        printf("  color_class[ass[v]]=");
+        print_binary(color_class[assigned_color[v]],n);
+        printf("  color_info[ass[v]].cclass=");
+        print_binary(color_info[assigned_color[v]].colorability_class,n);
+        printf("\n");
+        //*/
         
         /*/ Sanity check that assigned_color[] and color_class[] have the same information.
         bitarray mask=1;
@@ -218,7 +195,6 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
         }
         //*/
         
-
         if (assigned_color[v]<=cur_color)
         {
             if (
@@ -234,14 +210,6 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
                 
                 v++;  // advance to the next vertex
                 v_mask<<=1;
-                
-                while (v_mask & vertices_to_skip)  // skip vertices if necessary
-                {
-                    v++;
-                    v_mask<<=1;
-                    if (v>=n)
-                        break;
-                }
                 
                 if (v>=n)  // we could replace this with an & test
                 {
@@ -263,14 +231,6 @@ bool ListAssignment::has_feasible_coloring(bitarray vertices_to_skip)
             // hence we must backtrack
             v--;
             v_mask>>=1;
-            
-            while (v_mask & vertices_to_skip)  // skip vertices if necessary
-            {
-                v--;
-                v_mask>>=1;
-                if (!v_mask)
-                    break;
-            }
             
             if (v_mask)  // hence, v>=0
             {
@@ -355,6 +315,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
     unsigned long long int count=0, num_feasible_colorings=0;
     int odometer=mod;  // for parallelization; keeps track of the number of nodes of the search tree at level splitlevel
                        // remember that decrementing odometer happens before testing against the residue
+    bool backtracking=false;  // indicates whether the last step was backtracking or not
 
     while (cur_color>=0)
     {
@@ -389,7 +350,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
         //*/
         
         count++;
-        if ((count&0xFFFFF)==0)  //((count&0xFFFFFF)==0)
+        if (1) //((count&0xFFFFF)==0)  //((count&0xFFFFFF)==0)
         {
             printf("\ncount=");// %20llu\n",count);
             print_long(count,20);
@@ -398,7 +359,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
             printf("\n");
         
             //*/
-            printf("cur_color=%d\n",cur_color);
+            printf("cur_color=%d, backtracking=%d\n",cur_color,backtracking);
             
             int maxvalue=(cur_color>=n ? cur_color : n-1);
             for (int i=0; i<=maxvalue; i++)
@@ -434,9 +395,11 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
         if (color_info[cur_color].generate_subgraph())
         {
             //printf("Successfully generated a new subgraph to use as a colorability class.\n");
+            printf("Setting backtracking to False.\n");
+            backtracking=false;
             
             // We need to check if this partial list assignment is suitable, ie, if there is a feasible coloring.
-            if (!has_feasible_coloring(0))
+            if (!has_feasible_coloring())
             {
                 // This partial list assignment needs to be advanced.
                 
@@ -488,7 +451,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                         // We test if colorability_class is a subset of eligible vertices.
                         // We test if bitarray x is a subset of bitarry y using (x & ~y) == 0.
                         // This is just the negation of the implication x=>y.
-                        if (has_feasible_coloring(0))
+                        if (has_feasible_coloring())
                             break;  // proceed to the next subgraph for this colorability class
                         else
                             ;  // we should go back to the beginning of the loop and add this subgraph again
@@ -502,6 +465,9 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                 // We keep track of feasible colorings separately for verifying the parallelization is working correctly.
                 num_feasible_colorings++;
                 
+                printf("Setting backtracking to True.\n");
+                backtracking=true;
+                
                 ;  // we do nothing and go back to the beginning of the loop to generate the next subgraph
             }
         }
@@ -509,42 +475,68 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
         {
             // There are no more subgraphs to generate, but have not found a suitable coloring.
             // This is a violation only if every vertex has a full list.
-            //printf("Could not generate any more subgraphs\n");
+            printf("Could not generate any more subgraphs\n");
             
             // Note that color_info[cur_color].colorability_class is NOT valid, so we back up.
             cur_color--;
             
-            if (!has_feasible_coloring(color_info[cur_color+1].eligible_vertices))  // but we need to include those vertices
-                // vertices that are eligible do not have full lists, and so can have a singleton added to them.  Thus, they can always be colored.  So we skip them when checking for a feasible coloring.
+            /*
+            // FIXME:  Do we need to add singletons to eligible vertices????
+            //printf("We're adding singleton subgraphs\n");
+            int mark_cur_color=cur_color;
+            bitarray mask=1<<n;
+            while (mask)
             {
-                printf("No more subgraphs to generate!, no feasible coloring, count=%llu\n",count);
-                
-                // print that out
-                has_feasible_coloring(color_info[cur_color].eligible_vertices | (1<<n) );
-                
-                //*/
-                printf("Full list assignment created, cur_color=%d\n",cur_color);
-                for (int i=0; i<=cur_color; i++)
+                if (mask & color_info[cur_color].eligible_vertices)
+                    // this vertex does not have a full list, so add a singleton to it
                 {
-                    printf("color=%2d  ",i);
-                    print_binary(color_info[i].colorability_class,n);
+                    /*
+                    printf("Adding singleton subgraph to: ");
+                    print_binary(mask,n);
                     printf("\n");
+                    //*-/
+                    color_info[cur_color+1].setup_next_from(color_info[cur_color],f);
+                    cur_color++;
+                    color_info[cur_color].colorability_class=mask;  // the singleton subgraph
                 }
-                for (int v=0; v<n; v++)
-                    printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
-                            v,f[v],color_info[cur_color+1].L[v],f[v]-color_info[cur_color+1].L[v]);
-                printf(" el_verts=");
-                print_binary(color_info[cur_color+1].eligible_vertices,n);
-                printf("\n");
-                printf("  el_gens=");
-                print_binary(color_info[cur_color+1].eligible_generators,n);
-                printf("\n");
-                //*/
-                
-                return false;
+                mask>>=1;
             }
-            else  // We have a feasible coloring, so proceed with the search.
-                ;
+            //*/
+            
+            if (!backtracking)
+            {
+                if (!has_feasible_coloring())  // but we need to include those vertices
+                    // vertices that are eligible do not have full lists, and so can have a singleton added to them.  Thus, they can always be colored.  So we skip them when checking for a feasible coloring.
+                {
+                    printf("No more subgraphs to generate!, no feasible coloring, count=%llu\n",count);
+                    
+                    //*/
+                    printf("Full list assignment created, cur_color=%d, backtracking=%d\n",cur_color,backtracking);
+                    for (int i=0; i<=cur_color; i++)
+                    {
+                        printf("color=%2d  ",i);
+                        print_binary(color_info[i].colorability_class,n);
+                        printf("\n");
+                    }
+                    for (int v=0; v<n; v++)
+                        printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
+                                v,f[v],color_info[cur_color+1].L[v],f[v]-color_info[cur_color+1].L[v]);
+                    printf(" el_verts=");
+                    print_binary(color_info[cur_color+1].eligible_vertices,n);
+                    printf("\n");
+                    printf("  el_gens=");
+                    print_binary(color_info[cur_color+1].eligible_generators,n);
+                    printf("\n");
+                    //*/
+                    
+                    return false;
+                }
+                else  // We have a feasible coloring, so proceed with the search.
+                    ;
+            }
+            
+            printf("Setting backtracking to True.\n");
+            backtracking=true;
         }
     }
     
