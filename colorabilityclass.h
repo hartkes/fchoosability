@@ -104,11 +104,11 @@ bool ColorabilityClassInfo::generate_subgraph()
             printf("\n");
             //*/
             
-            /*
+            //*
             if ((mask & eligible_vertices) && (L[v]==0))
                 // this if needs to be separate from the if below, since we're also testing vertices that might not have eligible generators
             {
-                printf("We found L[%d]==0\n",v);
+                //printf("We found L[%d]==0\n",v);
                 
                 eligible_generators|=1<<n;  // this ensures the following loop terminates
                 min_v=v;
@@ -123,24 +123,24 @@ bool ColorabilityClassInfo::generate_subgraph()
                     // Note that eligible_generators is a subset of eligible_vertices.
                 {
                     // We can advance the vertex min_v, and it has the potential of covering v.
-                    printf("We're advancing min_v=%d\n",min_v);
+                    //printf("We're advancing min_v=%d\n",min_v);
                     min_L=0;
                     break;
                 }
                 else
                 {
-                    // There's no other way for v to get a color other than to add a singleton.
-                    printf("Adding singleton to v=%d\n",v);
+                    // There's no way for v to get a color in its list.  Thus, we return that there are no more subgraphs to generate.
+                    /*
+                    printf("v=%d cannot get a color in its list\n",v);
                     printf("el_verts=");
                     print_binary(eligible_vertices,n);
                     printf("\n");
                     printf(" el_gens=");
                     print_binary(eligible_generators,n);
                     printf("\n");
-                    colorability_class=1<<v;
-                    eligible_vertices&=~(1<<v);
-                        // this prevents this colorability_class from being added multiple times
-                    return true;
+                    */
+                    
+                    return false;  // we are not returning a subgraph; we must backtrack
                 }
             }
             //*/
