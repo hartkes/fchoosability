@@ -370,8 +370,8 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                 }
                 else
                 {
-                    printf("            ");
-                    for (int k=0; k<n; k++)
+                    printf("         ");
+                    for (int k=n+(n/4); k>0; k--)
                         printf(" ");
                 }
                 if (i<n)
@@ -404,35 +404,6 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     // TODO:  If we can limit the multiplicity of a colorability class, we can put a for condition here limiting  how many times this loop runs.
                 {
                     
-                    // At this point, this partial list assignment does not have a feasible coloring.
-                    // Thus, if this list assignment is full, then this is a bad list assignment and we terminate.
-                    // A list assignment is full if and only if there are no eligible vertices.
-                    if (color_info[cur_color].eligible_vertices==0)
-                    {
-                        // This is a bad list assignment!
-                        //*/
-                        printf("BAD full list assignment created, cur_color=%d\n",cur_color);
-                        for (int i=0; i<=cur_color; i++)
-                        {
-                            printf("color=%2d  ",i);
-                            print_binary(color_info[i].colorability_class,n);
-                            printf("\n");
-                        }
-                        for (int v=0; v<n; v++)
-                            printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
-                                    v,f[v],color_info[cur_color+1].L[v],f[v]-color_info[cur_color+1].L[v]);
-                        printf(" el_verts=");
-                        print_binary(color_info[cur_color+1].eligible_vertices,n);
-                        printf("\n");
-                        printf("  el_gens=");
-                        print_binary(color_info[cur_color+1].eligible_generators,n);
-                        printf("\n");
-                        //*/
-                        
-                        return false;
-                        
-                    }
-                    
                     //*
                     // This code allows for parallelization.
                     if (cur_color==splitlevel)
@@ -462,6 +433,54 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     
                     color_info[cur_color+1].setup_next_from(color_info[cur_color],f);  // initialize the new colorability_class info
                     cur_color++;
+                    
+                    // At this point, this partial list assignment (up through cur_color) does not have a feasible coloring.
+                    // Thus, if this list assignment is full, then this is a bad list assignment and we terminate.
+                    // A list assignment is full if and only if there are no eligible vertices.
+                    // However, the eligible vertices remaining after colorability class cur_color is added is calculated 
+                    // when setting up for the cur_color+1 colorability class.
+                    
+                    //printf(">el_verts=");
+                    //print_binary(color_info[cur_color].eligible_vertices,n);
+                    //printf("\n");
+                    
+                    if (color_info[cur_color].eligible_vertices==0)
+                    {
+                        cur_color--;  // No colorability class has been assigned to cur_color yet.
+                        
+                        // This is a full list assignment that has no feasible coloring: it's a bad list assignment!
+                        //*/
+                        printf("BAD full list assignment created, cur_color=%d\n",cur_color);
+                        for (int i=0; i<=cur_color; i++)
+                        {
+                            printf("color=%2d  ",i);
+                            print_binary(color_info[i].colorability_class,n);
+                            printf("\n");
+                        }
+                        for (int v=0; v<n; v++)
+                            printf("   v=%2d  f[v]=%d  L[v]=%d  needed=%d\n",
+                                    v,f[v],color_info[cur_color+1].L[v],f[v]-color_info[cur_color+1].L[v]);
+                        printf(" el_verts=");
+                        print_binary(color_info[cur_color+1].eligible_vertices,n);
+                        printf("\n");
+                        printf("  el_gens=");
+                        print_binary(color_info[cur_color+1].eligible_generators,n);
+                        printf("\n");
+                        //*/
+                        
+                        return false;
+                        
+                    }
+                    
+                    // We use the Small Pot Lemma here.
+                    // We do this after setting up the next level and calculating eligible_vertices for cur_color+1,
+                    // so that we don't miss a bad full list assignment.
+                    if (cur_color>=n)
+                    {
+                        //printf("Applying the Small Pot Lemma! cur_color=%d count=%20llu\n",cur_color,count);
+                        cur_color--;
+                        break;
+                    }
                     
                     /*
                     printf("incrementing cur_color to %d\n",cur_color);
