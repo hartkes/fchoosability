@@ -363,7 +363,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
             int maxvalue=(cur_color>=n ? cur_color : n-1);
             for (int i=0; i<=maxvalue; i++)
             {
-                if (i<=cur_color)
+                if (i<cur_color)  // cur_color does not include a valid colorability_class (yet)
                 {
                     printf("color=%2d  ",i);
                     print_binary(color_info[i].colorability_class,n);
