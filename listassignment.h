@@ -370,7 +370,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                 }
                 else
                 {
-                    printf("         ");
+                    printf("          ");
                     for (int k=n+(n/4); k>0; k--)
                         printf(" ");
                 }
@@ -410,6 +410,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                         // we need to check whether we should go further (deepen the search tree) or not
                     {
                         // FIXME: TODO:  This break does not allow the search to expand beyond the splitlevel.
+                        // This can be simulated by setting the residue equal to the modulus (and hence no branch is ever expanded).
                         //break;
                         
                         odometer--;
@@ -473,9 +474,11 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     }
                     
                     // We use the Small Pot Lemma here.
+                    // We currently have cur_color colorability classes in our list assignment.
+                    // If we have at least n-1 colorability classes, then by the Small Pot Lemma we don't need to add an nth one.
                     // We do this after setting up the next level and calculating eligible_vertices for cur_color+1,
                     // so that we don't miss a bad full list assignment.
-                    if (cur_color>=n)
+                    if (cur_color>=n-1)
                     {
                         //printf("Applying the Small Pot Lemma! cur_color=%d count=%20llu\n",cur_color,count);
                         cur_color--;
