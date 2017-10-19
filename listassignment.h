@@ -400,7 +400,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
             {
                 // This partial list assignment needs to be advanced.
                 int multiplicity;  // declared outside the loop so it can be used afterward
-                for (multiplicity=__builtin_popcount(color_info[cur_color].colorability_class); 
+                for (multiplicity=__builtin_popcountll(color_info[cur_color].colorability_class); 
                         // the popcount counts the number of bits set; this is a gcc builtin.
                      multiplicity>0; multiplicity--)
                     // we limit the multiplicity of a colorability class to its size
