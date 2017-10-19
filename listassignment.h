@@ -399,9 +399,11 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
             if (!has_feasible_coloring())
             {
                 // This partial list assignment needs to be advanced.
-                
-                while (true)
-                    // TODO:  If we can limit the multiplicity of a colorability class, we can put a for condition here limiting  how many times this loop runs.
+                int multiplicity;  // declared outside the loop so it can be used afterward
+                for (multiplicity=__builtin_popcount(color_info[cur_color].colorability_class); 
+                        // the popcount counts the number of bits set; this is a gcc builtin.
+                     multiplicity>0; multiplicity--)
+                    // we limit the multiplicity of a colorability class to its size
                 {
                     
                     //*
@@ -509,6 +511,13 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                         break;  // we'll need to find the next subgraph for this colorability class
                         
                 }
+                if (multiplicity==0)
+                    // This colorability class has multiplicity equal to its size, and so the vertices in the colorability class can always be colored.  Hence we don't need to add any more colors to the lists of those vertices, so we mark them as ineligible.
+                {
+                    //printf("max multiplicity!, cur_color=%d\n",cur_color);
+                    color_info[cur_color].eligible_vertices&=(~color_info[cur_color].colorability_class);
+                }
+                
             }
             else  // There is a feasible coloring, so we continue on to the next subgraph.
             {
