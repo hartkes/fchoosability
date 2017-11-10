@@ -138,7 +138,7 @@ bool ColorabilityClassInfo::generate_subgraph()
                     printf(" el_gens=");
                     print_binary(eligible_generators,n);
                     printf("\n");
-                    */
+                    //*/
                     
                     return false;  // we are not returning a subgraph; we must backtrack
                 }
