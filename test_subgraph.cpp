@@ -46,11 +46,12 @@ int main()
             printf("\n");
         }
         
-        root=0;  //0;  //5;
+        root=G.n-1;  //0;  //5;
         //eligible_vertices=(1<<G.n)-1;
         //                  109876543210
         eligible_vertices=0b001001000001;
-        
+        eligible_vertices=(1<<G.n)-1;  // all vertices are eligible
+
         ConnectedSubgraph S(G.n,neighbors);
         S.initialize(root,eligible_vertices);
         count=0;
