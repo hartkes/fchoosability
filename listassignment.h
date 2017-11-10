@@ -367,6 +367,63 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                 {
                     printf("color=%2d  ",i);
                     print_binary(color_info[i].colorability_class,n);
+                    
+                    /*
+                    if ((i==0) && (cur_color==1) && ((color_info[i].colorability_class&0b100001)==0b100001) && (__builtin_popcountll(color_info[i].colorability_class)==4))
+                        printf("four");
+                    if ((i==0) //&& (cur_color==2) 
+                        &&((color_info[0].colorability_class==0b101101) 
+                         ||(color_info[0].colorability_class==0b110011)
+                         ||(color_info[0].colorability_class==0b001010)
+                         ||(color_info[0].colorability_class==0b010100))
+                       )
+                        printf("this1");
+                    if ((i==1) //&& (cur_color==2) 
+                        &&((color_info[0].colorability_class==0b101101) 
+                         ||(color_info[0].colorability_class==0b110011)
+                         ||(color_info[0].colorability_class==0b001010)
+                         ||(color_info[0].colorability_class==0b010100))
+                        &&((color_info[1].colorability_class==0b101101) 
+                         ||(color_info[1].colorability_class==0b110011)
+                         ||(color_info[1].colorability_class==0b001010)
+                         ||(color_info[1].colorability_class==0b010100))
+                       )
+                        printf("this2");
+                    if ((i==2) //&& (cur_color==2) 
+                        &&((color_info[0].colorability_class==0b101101) 
+                         ||(color_info[0].colorability_class==0b110011)
+                         ||(color_info[0].colorability_class==0b001010)
+                         ||(color_info[0].colorability_class==0b010100))
+                        &&((color_info[1].colorability_class==0b101101) 
+                         ||(color_info[1].colorability_class==0b110011)
+                         ||(color_info[1].colorability_class==0b001010)
+                         ||(color_info[1].colorability_class==0b010100))
+                        &&((color_info[2].colorability_class==0b101101) 
+                         ||(color_info[2].colorability_class==0b110011)
+                         ||(color_info[2].colorability_class==0b001010)
+                         ||(color_info[2].colorability_class==0b010100))
+                       )
+                        printf("this3");
+                    if ((i==3) //&& (cur_color==2) 
+                        &&((color_info[0].colorability_class==0b101101) 
+                         ||(color_info[0].colorability_class==0b110011)
+                         ||(color_info[0].colorability_class==0b001010)
+                         ||(color_info[0].colorability_class==0b010100))
+                        &&((color_info[1].colorability_class==0b101101) 
+                         ||(color_info[1].colorability_class==0b110011)
+                         ||(color_info[1].colorability_class==0b001010)
+                         ||(color_info[1].colorability_class==0b010100))
+                        &&((color_info[2].colorability_class==0b101101) 
+                         ||(color_info[2].colorability_class==0b110011)
+                         ||(color_info[2].colorability_class==0b001010)
+                         ||(color_info[2].colorability_class==0b010100))
+                        &&((color_info[3].colorability_class==0b101101) 
+                         ||(color_info[3].colorability_class==0b110011)
+                         ||(color_info[3].colorability_class==0b001010)
+                         ||(color_info[3].colorability_class==0b010100))
+                       )
+                        printf("this4");
+                    //*/
                 }
                 else
                 {
@@ -393,11 +450,18 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
         
         if (color_info[cur_color].generate_subgraph())
         {
-            //printf("Successfully generated a new subgraph to use as a colorability class.\n");
+            /*
+            printf("Successfully generated a new subgraph to use as a colorability class.\n");
+            printf("cur_color=%2d  ",cur_color);
+            print_binary(color_info[cur_color].colorability_class,n);
+            printf("\n");
+            //*/
             
             // We need to check if this partial list assignment is suitable, ie, if there is a feasible coloring.
             if (!has_feasible_coloring())
             {
+                //printf("We do not have a feasible coloring.\n");
+                
                 // This partial list assignment needs to be advanced.
                 int multiplicity;  // declared outside the loop so it can be used afterward
                 for (multiplicity=__builtin_popcountll(color_info[cur_color].colorability_class); 
@@ -436,6 +500,7 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     
                     color_info[cur_color+1].setup_next_from(color_info[cur_color],f);  // initialize the new colorability_class info
                     cur_color++;
+                    //printf("next set up, cur_color=%2d\n",cur_color);
                     
                     // At this point, this partial list assignment (up through cur_color) does not have a feasible coloring.
                     // Thus, if this list assignment is full, then this is a bad list assignment and we terminate.
@@ -443,9 +508,11 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     // However, the eligible vertices remaining after colorability class cur_color is added is calculated 
                     // when setting up for the cur_color+1 colorability class.
                     
-                    //printf(">el_verts=");
-                    //print_binary(color_info[cur_color].eligible_vertices,n);
-                    //printf("\n");
+                    /*
+                    printf(">el_verts=");
+                    print_binary(color_info[cur_color].eligible_vertices,n);
+                    printf("\n");
+                    //*/
                     
                     if (color_info[cur_color].eligible_vertices==0)
                     {
@@ -480,12 +547,14 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                     // If we have at least n-1 colorability classes, then by the Small Pot Lemma we don't need to add an nth one.
                     // We do this after setting up the next level and calculating eligible_vertices for cur_color+1,
                     // so that we don't miss a bad full list assignment.
+                    //*
                     if (cur_color>=n-1)
                     {
                         //printf("Applying the Small Pot Lemma! cur_color=%d count=%20llu\n",cur_color,count);
                         cur_color--;
                         break;
                     }
+                    //*/
                     
                     /*
                     printf("incrementing cur_color to %d\n",cur_color);
@@ -511,6 +580,9 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
                         break;  // we'll need to find the next subgraph for this colorability class
                         
                 }
+                
+                //printf("multiplicity=%d\n",multiplicity);
+                
                 if (multiplicity==0)
                     // This colorability class has multiplicity equal to its size, and so the vertices in the colorability class can always be colored.  Hence we don't need to add any more colors to the lists of those vertices, so we mark them as ineligible.
                 {
@@ -521,6 +593,8 @@ bool ListAssignment::verify(int res,int mod,int splitlevel)
             }
             else  // There is a feasible coloring, so we continue on to the next subgraph.
             {
+                //printf("We have a feasible coloring!\n");
+                
                 // We keep track of feasible colorings separately for verifying the parallelization is working correctly.
                 num_feasible_colorings++;
                 

@@ -62,25 +62,46 @@ bool next_subset(bitarray &x, const bitarray &universe)
     // http://lhearen.top/2016/07/06/Bit-manipulation/ section 3 on Sets
     // It's also in the fxtbook (Section 1.25 Generating bit subsets of a given word), as well as Knuth's The Art of Computing Volume 4A: Combinatorial Algorithms, Section 7.1.3 subsection Working with fragmented fields.
     
+    bitarray y;
+    
     // Note that if x==0 (the empty set) initially, then false is returned, but x is also reset to the universe (since -1 is the all 1s vector).  We do this to avoid having a branch in this code.
     
     bool return_value=((x!=0) & (universe!=0));
         // We need to be able to correctly handle when the universe changes.
         // As long as x!=0 and universe!=0, then there will be a valid next subset.
-        // However, if x==0 or universe==0, then there are no more subsets 
+        // However, if x==0 or universe==0, then there are no more subsets.
         // (If universe==0, then we immediately return false; we do not consider the empty set of an empty universe to be valid.  This is a choice to make the calling code easier.).
     
-    x=(x-1) & universe;
-        // This line correctly computes the next subset even when the universe changes.
-        // (and not just when the new universe is a proper subset, but any change in universe).
-        // x-1 removes the low order bit of x and then sets the lower order bits.
-        // &ed with universe keeps just those bits in universe.
-        // However, since 
+    // Note that the following code does not work if the universe has shrunk.
+    // As an example, old universe=111=7 (LSB first), set=101=5, new universe=110=3.
+    //x=(x-1) & universe;
+    
+    // To create our successor, we first substract 1.
+    x--;
+    
+    // We now need to clear the bits that are outside of the universe.
+    // However, we cannot simply clear them, we must advance our set to the next subset in the universe.
+    // So we find the highest bit of x that is not in the universe; all lower-order bits in the universe
+    // should be put into the subset (since they come after in the subset order).
+    
+    y=x&(~universe);
+    
+    // The following operations fill in 1s in all lower-order bit positions after the highest-order bit.
+    // The code is inspired by:
+    // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+    y|=(y>>1);
+    y|=(y>>2);
+    y|=(y>>4);
+    y|=(y>>8);
+    y|=(y>>16);
+    y|=(y>>32);
+    
+    // We now set those bits in x and then & with the universe.
+    // Note that the highest-order bit in y will be erased from x by &ed with universe.
+    x=(x|y) & universe;
     
     return return_value;
 }
-
-
 
 
 
